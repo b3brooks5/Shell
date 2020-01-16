@@ -20,6 +20,7 @@ void addToken(instruction* instr_ptr, char* tok);
 void printTokens(instruction* instr_ptr);
 void clearInstruction(instruction* instr_ptr);
 void addNull(instruction* instr_ptr);
+void interpret(instruction* instr_ptr);
 
 int main() {
 	char* token = NULL;
@@ -29,10 +30,13 @@ int main() {
 	instr.tokens = NULL;
 	instr.numTokens = 0;
 
+	char* user = getenv("USER");
+	char* machine = getenv("MACHINE");	
+	char * path = "";
 
 	while (1) {
-		printf("Please enter an instruction: ");
-
+		// printf("Please enter an instruction: ");
+		printf("%s%s%s%s%s%s", user, "@", machine, ":~", path,  " > ");
 		// loop reads character sequences separated by whitespace
 		do {
 			//scans for next token and allocates token var to size of scanned token
@@ -75,6 +79,7 @@ int main() {
 		} while ('\n' != getchar());    //until end of line is reached
 
 		addNull(&instr);
+		interpret(&instr);
 		printTokens(&instr);
 		clearInstruction(&instr);
 	}
@@ -131,4 +136,19 @@ void clearInstruction(instruction* instr_ptr)
 
 	instr_ptr->tokens = NULL;
 	instr_ptr->numTokens = 0;
+}
+
+// read through tokens
+void interpret(instruction* instr_ptr) {
+	if (!(strcmp(instr_ptr->tokens[0], "echo")) ){
+
+		if (!(strcmp(instr_ptr->tokens[1], "$USER")))
+			printf("%s\n", getenv("USER"));
+		printf("It's working");
+	}
+	else {
+		printf("%d \n", instr_ptr->tokens[0] ); 
+		printf("error");
+	}
+	printf("\n");
 }

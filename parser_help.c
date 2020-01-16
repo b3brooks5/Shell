@@ -9,6 +9,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 typedef struct
 {
@@ -21,6 +24,7 @@ void printTokens(instruction* instr_ptr);
 void clearInstruction(instruction* instr_ptr);
 void addNull(instruction* instr_ptr);
 void interpret(instruction* instr_ptr);
+void my_execute(char **cmd);
 
 int main() {
 	char* token = NULL;
@@ -32,11 +36,11 @@ int main() {
 
 	char* user = getenv("USER");
 	char* machine = getenv("MACHINE");	
-	char * path = "";
 
 	while (1) {
+		char * path = getenv("PWD");
 		// printf("Please enter an instruction: ");
-		printf("%s%s%s%s%s%s", user, "@", machine, ":~", path,  " > ");
+		printf("%s%s%s%s%s%s", user, "@", machine, ":", path, "> ");
 		// loop reads character sequences separated by whitespace
 		do {
 			//scans for next token and allocates token var to size of scanned token
@@ -69,7 +73,7 @@ int main() {
 				temp[i-start] = '\0';
 				addToken(&instr, temp);
 			}
-
+		
 			//free and reset variables
 			free(token);
 			free(temp);
@@ -151,4 +155,36 @@ void interpret(instruction* instr_ptr) {
 		printf("error");
 	}
 	printf("\n");
+//	if (!(strcmp(instr_ptr->tokens[0], "cd")))
+//	{
+
+
+//	}
+
 }
+
+void my_execute(char **cmd)
+{
+	int status;
+	pid_t pid = fork();
+	if (pid == -1)		//error
+	{
+		printf("Error");
+		exit(1);		
+	}
+	else if (pid == 0)	//child
+	{
+		execv(cmd[0], cmd);
+	//	fprintf("Problem executing %s\n", cmd[0]);
+		exit(1);	
+	}
+	else			//parent
+	{
+		waitpid(pid, &status, 0);
+	}
+}
+
+
+
+
+

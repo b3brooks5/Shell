@@ -24,15 +24,15 @@ void printTokens(instruction* instr_ptr);
 void clearInstruction(instruction* instr_ptr);
 void addNull(instruction* instr_ptr);
 
-void interpret(instruction* instr_ptr);
+void interpret(instruction* instr_ptr, char* PWD);
 
 int inside(char* str, int i);
 
 char** resizeArray(char**, int*);	// returns an array with double the size as was previously passed, doubles passed int
 char** createArray(int);		// initiates a new 2d dynamically allocated array
 void deallocateArray(char**, int); 	// destructs a dynamically allocated array
-char* parse_path(char* str);
-
+char* parse_path(char* str, char* PWD);
+void double_period(char* ret);
 
 void my_execute(char **cmd);
 
@@ -47,11 +47,11 @@ int main() {
 
 	char* user = getenv("USER");
 	char* machine = getenv("MACHINE");	
-
+	char* PWD = getenv("PWD");
 	while (1) {
-		char * path = getenv("PWD");
+		//char * path = getenv("PWD");
 		// printf("Please enter an instruction: ");
-		printf("%s%s%s%s%s%s", user, "@", machine, ":", path, "> ");
+		printf("%s%s%s%s%s%s", user, "@", machine, ":", PWD, "> ");
 		// loop reads character sequences separated by whitespace
 		do {
 			//scans for next token and allocates token var to size of scanned token
@@ -94,7 +94,7 @@ int main() {
 		} while ('\n' != getchar());    //until end of line is reached
 
 		addNull(&instr);
-		interpret(&instr);
+		interpret(&instr, PWD);
 		printTokens(&instr);
 		clearInstruction(&instr);
 	}
@@ -154,92 +154,83 @@ void clearInstruction(instruction* instr_ptr)
 }
 
 // read through tokens
-void interpret(instruction* instr_ptr) {
-	if (!(strcmp(instr_ptr->tokens[0], "echo")) ){
-
+void interpret(instruction* instr_ptr, char* PWD) {
+	if (!(strcmp(instr_ptr->tokens[0], "echo")) ){		// if statement for all eachos
 		if (!(strcmp(instr_ptr->tokens[1], "$USER")))
-			printf("%s\n", getenv("USER"));
-		
-//		printf("It's working");
+			printf("%s\n", getenv("USER"));	
 	}
-	if (!(strcmp(instr_ptr->tokens[0], "cd")) ){
-		char* ret = parse_path(instr_ptr->tokens[1]);
-		printf("return = %s\n", ret);
+	if (strcmp(instr_ptr->tokens[0], "cd") == 0 ){		// chanbging directory
+		char* ret = parse_path(instr_ptr->tokens[1], PWD);
+		strcpy(PWD, ret);
 	}
-	else {
+	else {							// generic error message
 		printf("%d \n", instr_ptr->tokens[0] ); 
 		printf("error");
 	}
 	printf("\n");
-//	if (!(strcmp(instr_ptr->tokens[0], "cd")))
-//	{
-
-
-//	}
-
 }
 
 
 // gets absolute path returned at string
-char* parse_path(char* str){
-	char** array;
-	int size = 5;
+char* parse_path(char* str, char* PWD){
+	char** array;	// 2D array
+	int size = 5;	// initial size
 
-	array = createArray(size);
-//	printf("str: ", str);
-	char* token = strtok(str, "/");
+	array = createArray(size);	// create array
+
+	char* token = strtok(str, "/");		// start parsing path
 	int i = 1, j = 0, parsed = 0;
 
-	while(token != NULL){
-			
+	while(token != NULL){			// will end with a list of all names in path seperated by /
 		if(i == size - 1){
-//			printf("Resizing\n");
 			array = resizeArray(array, &size);
 		}
 	
 		strcpy(array[i], token);
 		i++;
 		token = strtok(NULL, "/");
-	
-//		printf("Printing entire array\n");
-//		for(j = 0; j < size; j++) {
-//			printf("array[%d]%s\n", j, array[j]);
-//		}
-
 	}
 
-	char* ret = (char*)malloc(100 * sizeof(char));
-//	printf("Attempting to combine strings\n");
-//	printf("array[0] = %s\n", array[0]); 
-	strcpy(ret, array[0]);
+	char* ret = (char*)malloc(500 * sizeof(char));		// ret will be the new absolute path
 
-//	printf("ret before entering loop: %s\n", ret);
-	for ( j = 1; j < i; j++){
-	//	printf("array[%d] = %s\n", j, array[j]);
-	//	printf("current token %s\n\n", token);
+	if (strcmp(array[1], "~") == 0){	// if we need to start form home just get home, igore PWD
+		strcpy(ret, getenv("HOME"));
+	}
+	else{
+		strcpy(ret, PWD);		// use PWD to keep track of our own path 
+		strcat(ret, "/");
+		strcat(ret, array[0]);		// add slash and path name
+	}
 
-		if(strcmp(array[j], ".") == 0){
-			// printf("Doing nothing");
+	for ( j = 1; j < i; j++){		// loop through the rest of the names that we seperated by /
+		if(strcmp(array[j], ".") == 0)		{}	// '.' doesn't change directory
+		else if(strcmp(array[j], "~") == 0 )	{	// already started at HOME so just add slash
+			strcat(ret, "/");
 		}
 		else if(strcmp(array[j], "..") == 0){
-			int ch = strlen(ret) - 1;
-			array[ch] = '\0';
-			ch--;
-			
-			while (ret[ch] != '/' || ch == 0){
-				ret[ch] = '\0';
-				ch--;
-			}
-			//ret[strlen(ret) -1] = '\0'; 
-			 			
-		}
-		else {		
+			double_period(ret);	// erases chars up to next '/' or until string is empty
+ 		}
+		else {		// in base case just get then next name in the path		
 			strcat(ret, array[j]);
 			strcat(ret, "/");
-//			printf("ret %s\n", ret);
+			printf("ret %s\n", ret);
 		}
 	}
+	if(ret[strlen(ret) - 1] == '/')		// if the last char in ret is a slash take it off
+		ret[strlen(ret) -1 ] = '\0';
+	
 	return ret;
+}
+
+// returns string from thring passed minus all chars after last '/'
+void double_period(char* ret){
+	int ch = strlen(ret) - 1;
+	ch--;
+			
+	while (ret[ch] != '/' || ch == 0){
+		ret[ch] = '\0';
+		ch--;
+	}
 }
 
 // releases memory of dynamically allocated array 

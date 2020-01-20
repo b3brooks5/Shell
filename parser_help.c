@@ -9,6 +9,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 typedef struct
 {
@@ -22,12 +25,16 @@ void clearInstruction(instruction* instr_ptr);
 void addNull(instruction* instr_ptr);
 
 void interpret(instruction* instr_ptr);
+
 int inside(char* str, int i);
 
 char** resizeArray(char**, int*);	// returns an array with double the size as was previously passed, doubles passed int
 char** createArray(int);		// initiates a new 2d dynamically allocated array
 void deallocateArray(char**, int); 	// destructs a dynamically allocated array
 char* parse_path(char* str);
+
+
+void my_execute(char **cmd);
 
 
 int main() {
@@ -40,11 +47,11 @@ int main() {
 
 	char* user = getenv("USER");
 	char* machine = getenv("MACHINE");	
-	char * path = "";
 
 	while (1) {
+		char * path = getenv("PWD");
 		// printf("Please enter an instruction: ");
-		printf("%s%s%s%s%s%s", user, "@", machine, ":~", path,  " > ");
+		printf("%s%s%s%s%s%s", user, "@", machine, ":", path, "> ");
 		// loop reads character sequences separated by whitespace
 		do {
 			//scans for next token and allocates token var to size of scanned token
@@ -77,7 +84,7 @@ int main() {
 				temp[i-start] = '\0';
 				addToken(&instr, temp);
 			}
-
+		
 			//free and reset variables
 			free(token);
 			free(temp);
@@ -164,7 +171,14 @@ void interpret(instruction* instr_ptr) {
 		printf("error");
 	}
 	printf("\n");
+//	if (!(strcmp(instr_ptr->tokens[0], "cd")))
+//	{
+
+
+//	}
+
 }
+
 
 // gets absolute path returned at string
 char* parse_path(char* str){
@@ -279,5 +293,30 @@ char** resizeArray(char** array, int* sizeofarray) {
 
 	return new;
 }
+
+void my_execute(char **cmd)
+{
+	int status;
+	pid_t pid = fork();
+	if (pid == -1)		//error
+	{
+		printf("Error");
+		exit(1);		
+	}
+	else if (pid == 0)	//child
+	{
+		execv(cmd[0], cmd);
+	//	fprintf("Problem executing %s\n", cmd[0]);
+		exit(1);	
+	}
+	else			//parent
+	{
+		waitpid(pid, &status, 0);
+	}
+}
+
+
+
+
 
 

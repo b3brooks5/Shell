@@ -20,7 +20,15 @@ void addToken(instruction* instr_ptr, char* tok);
 void printTokens(instruction* instr_ptr);
 void clearInstruction(instruction* instr_ptr);
 void addNull(instruction* instr_ptr);
+
 void interpret(instruction* instr_ptr);
+int inside(char* str, int i);
+
+char** resizeArray(char**, int*);	// returns an array with double the size as was previously passed, doubles passed int
+char** createArray(int);		// initiates a new 2d dynamically allocated array
+void deallocateArray(char**, int); 	// destructs a dynamically allocated array
+char* parse_path(char* str);
+
 
 int main() {
 	char* token = NULL;
@@ -144,7 +152,12 @@ void interpret(instruction* instr_ptr) {
 
 		if (!(strcmp(instr_ptr->tokens[1], "$USER")))
 			printf("%s\n", getenv("USER"));
-		printf("It's working");
+		
+//		printf("It's working");
+	}
+	if (!(strcmp(instr_ptr->tokens[0], "cd")) ){
+		char* ret = parse_path(instr_ptr->tokens[1]);
+		printf("return = %s\n", ret);
 	}
 	else {
 		printf("%d \n", instr_ptr->tokens[0] ); 
@@ -152,3 +165,119 @@ void interpret(instruction* instr_ptr) {
 	}
 	printf("\n");
 }
+
+// gets absolute path returned at string
+char* parse_path(char* str){
+	char** array;
+	int size = 5;
+
+	array = createArray(size);
+//	printf("str: ", str);
+	char* token = strtok(str, "/");
+	int i = 1, j = 0, parsed = 0;
+
+	while(token != NULL){
+			
+		if(i == size - 1){
+//			printf("Resizing\n");
+			array = resizeArray(array, &size);
+		}
+	
+		strcpy(array[i], token);
+		i++;
+		token = strtok(NULL, "/");
+	
+//		printf("Printing entire array\n");
+//		for(j = 0; j < size; j++) {
+//			printf("array[%d]%s\n", j, array[j]);
+//		}
+
+	}
+
+	char* ret = (char*)malloc(100 * sizeof(char));
+//	printf("Attempting to combine strings\n");
+//	printf("array[0] = %s\n", array[0]); 
+	strcpy(ret, array[0]);
+
+//	printf("ret before entering loop: %s\n", ret);
+	for ( j = 1; j < i; j++){
+	//	printf("array[%d] = %s\n", j, array[j]);
+	//	printf("current token %s\n\n", token);
+
+		if(strcmp(array[j], ".") == 0){
+			// printf("Doing nothing");
+		}
+		else if(strcmp(array[j], "..") == 0){
+			int ch = strlen(ret) - 1;
+			array[ch] = '\0';
+			ch--;
+			
+			while (ret[ch] != '/' || ch == 0){
+				ret[ch] = '\0';
+				ch--;
+			}
+			//ret[strlen(ret) -1] = '\0'; 
+			 			
+		}
+		else {		
+			strcat(ret, array[j]);
+			strcat(ret, "/");
+//			printf("ret %s\n", ret);
+		}
+	}
+	return ret;
+}
+
+// releases memory of dynamically allocated array 
+void deallocateArray(char** arr, int size) {
+	int i;
+	for (i = 0; i < size; i++) {
+		free(arr[i]);
+	}
+	free(arr);	// releasing memory
+}
+
+// create new dynamic array of size 'size'
+char** createArray(int size) {
+	char** newarr = (char**)malloc(size * sizeof(char*));
+
+	int i;
+	for (i = 0; i < size; i++) {	// allocates each index in the array
+		newarr[i] = (char*)malloc(100 * sizeof(char));
+	}
+
+	return newarr;
+}
+
+// resizes an array and changes the size to double the passed size
+char** resizeArray(char** array, int* sizeofarray) {
+		
+	// keep origional size for dealocation, double it for new array
+	int oldsize = *sizeofarray;
+	*sizeofarray = oldsize * 2;
+
+	// create new array
+	char ** new = (char**)malloc(*sizeofarray * sizeof(char*));
+	
+	// allocate each index of new array
+	int i;	
+	for (i = 0; i < *sizeofarray; i++) {
+		new[i] = (char*)malloc(100 * sizeof(char));
+	}
+
+	// copy contents from old to new
+	for (i = 0; i < oldsize; i++) {
+		strcpy(new[i], array[i]);
+		//new[i] = array[i];
+	}
+
+	// free old array
+	for (i = 0; i < oldsize; i++) {
+		free(array[i]);
+	}
+	free(array);
+
+	return new;
+}
+
+

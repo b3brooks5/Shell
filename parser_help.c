@@ -12,6 +12,8 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
+
 
 typedef struct
 {
@@ -32,8 +34,8 @@ char** resizeArray(char**, int*);	// returns an array with double the size as wa
 char** createArray(int);		// initiates a new 2d dynamically allocated array
 void deallocateArray(char**, int); 	// destructs a dynamically allocated array
 char* parse_path(char* str, char* PWD);
-void double_period(char* ret);
-
+void double_period(char* ret);		// help parse double period
+int path_check(const char* str);	// cheaks if path namne valid
 void my_execute(char **cmd);
 
 
@@ -60,6 +62,7 @@ int main() {
 
 			int i;
 			int start = 0;
+		
 			for (i = 0; i < strlen(token); i++) {
 				//pull out special characters and make them into a separate token in the instruction
 				if (token[i] == '|' || token[i] == '>' || token[i] == '<' || token[i] == '&') {
@@ -91,6 +94,8 @@ int main() {
 
 			token = NULL;
 			temp = NULL;
+
+			
 		} while ('\n' != getchar());    //until end of line is reached
 
 		addNull(&instr);
@@ -156,12 +161,22 @@ void clearInstruction(instruction* instr_ptr)
 // read through tokens
 void interpret(instruction* instr_ptr, char* PWD) {
 	if (!(strcmp(instr_ptr->tokens[0], "echo")) ){		// if statement for all eachos
-		if (!(strcmp(instr_ptr->tokens[1], "$USER")))
+		if (strcmp(instr_ptr->tokens[1], "$USER") == 0)
 			printf("%s\n", getenv("USER"));	
+		else if(strcmp(instr_ptr->tokens[1], "$HOME") == 0 || strcmp(instr_ptr->tokens[1], "$home") == 0){
+			printf("%s\n", getenv("HOME"));
+		}
+		else {
+			printf("%s: undefined variable\n", instr_ptr->tokens[1]);
+		} 
 	}
-	if (strcmp(instr_ptr->tokens[0], "cd") == 0 ){		// chanbging directory
+	else if (strcmp(instr_ptr->tokens[0], "cd") == 0 ){		// chanbging directory
 		char* ret = parse_path(instr_ptr->tokens[1], PWD);
-		strcpy(PWD, ret);
+		
+		if( path_check(ret) == 1)	//cheak if path name is valid
+			strcpy(PWD, ret);
+		else
+			printf("no such file or directory\n");
 	}
 	else {							// generic error message
 		printf("%d \n", instr_ptr->tokens[0] ); 
@@ -213,7 +228,6 @@ char* parse_path(char* str, char* PWD){
 		else {		// in base case just get then next name in the path		
 			strcat(ret, array[j]);
 			strcat(ret, "/");
-			printf("ret %s\n", ret);
 		}
 	}
 	if(ret[strlen(ret) - 1] == '/')		// if the last char in ret is a slash take it off
@@ -221,6 +235,19 @@ char* parse_path(char* str, char* PWD){
 	
 	return ret;
 }
+
+// return 1 if path name is valid 0 otherwise
+int path_check(const char* path){
+	struct stat buffer;
+	int status;
+	if(stat(path, &buffer) == 0){
+		return 1;
+	}
+	else {
+		return 0;
+	}
+}
+
 
 // returns string from thring passed minus all chars after last '/'
 void double_period(char* ret){

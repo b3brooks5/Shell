@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 
 typedef struct
 {
@@ -19,7 +20,7 @@ typedef struct
 	int numTokens;
 } instruction;
 
-void addToken(instruction* instr_ptr, char* tok);
+void addToken(instruction* instr_ptr, char* tok, char* PWD);
 void printTokens(instruction* instr_ptr);
 void clearInstruction(instruction* instr_ptr);
 void addNull(instruction* instr_ptr);
@@ -34,8 +35,8 @@ void deallocateArray(char**, int); 	// destructs a dynamically allocated array
 char* parse_path(char* str, char* PWD);
 void double_period(char* ret);
 
-void my_execute(char **cmd);
-
+char* commandPath(char* cmd, char* PWD);	//returns command added to correct $PATH location
+void my_execute(char** cmd, char* PWD);		//executes commands
 
 int main() {
 	char* token = NULL;
@@ -66,14 +67,14 @@ int main() {
 					if (i-start > 0) {
 						memcpy(temp, token + start, i - start);
 						temp[i-start] = '\0';
-						addToken(&instr, temp);
+						addToken(&instr, temp, PWD);
 					}
 
 					char specialChar[2];
 					specialChar[0] = token[i];
 					specialChar[1] = '\0';
 
-					addToken(&instr,specialChar);
+					addToken(&instr,specialChar, PWD);
 
 					start = i + 1;
 				}
@@ -82,7 +83,7 @@ int main() {
 			if (start < strlen(token)) {
 				memcpy(temp, token + start, strlen(token) - start);
 				temp[i-start] = '\0';
-				addToken(&instr, temp);
+				addToken(&instr, temp, PWD);
 			}
 		
 			//free and reset variables
@@ -92,19 +93,19 @@ int main() {
 			token = NULL;
 			temp = NULL;
 		} while ('\n' != getchar());    //until end of line is reached
-
+		
 		addNull(&instr);
 		interpret(&instr, PWD);
 		printTokens(&instr);
 		clearInstruction(&instr);
 	}
-
+	
 	return 0;
 }
 
 //reallocates instruction array to hold another token
 //allocates for new token within instruction array
-void addToken(instruction* instr_ptr, char* tok)
+void addToken(instruction* instr_ptr, char* tok, char* PWD)
 {
 	//extend token array to accomodate an additional token
 	if (instr_ptr->numTokens == 0)
@@ -114,6 +115,8 @@ void addToken(instruction* instr_ptr, char* tok)
 
 	//allocate char array for new token in new slot
 	instr_ptr->tokens[instr_ptr->numTokens] = (char *)malloc((strlen(tok)+1) * sizeof(char));
+	if (strstr(tok,"/") != NULL || strstr(tok,".") != NULL || strstr(tok,"~") != NULL)
+		tok = parse_path(tok, PWD);     	//make absolute path		
 	strcpy(instr_ptr->tokens[instr_ptr->numTokens], tok);
 
 	instr_ptr->numTokens++;
@@ -159,13 +162,14 @@ void interpret(instruction* instr_ptr, char* PWD) {
 		if (!(strcmp(instr_ptr->tokens[1], "$USER")))
 			printf("%s\n", getenv("USER"));	
 	}
-	if (strcmp(instr_ptr->tokens[0], "cd") == 0 ){		// chanbging directory
+	if (strcmp(instr_ptr->tokens[0], "cd") == 0 ){		// changing directory
 		char* ret = parse_path(instr_ptr->tokens[1], PWD);
 		strcpy(PWD, ret);
+		printf("PWD%s\n", PWD);	
 	}
-	else {							// generic error message
-		printf("%d \n", instr_ptr->tokens[0] ); 
-		printf("error");
+	else {						
+		my_execute(instr_ptr->tokens, PWD);
+//		printf("error");
 	}
 	printf("\n");
 }
@@ -213,13 +217,25 @@ char* parse_path(char* str, char* PWD){
 		else {		// in base case just get then next name in the path		
 			strcat(ret, array[j]);
 			strcat(ret, "/");
-			printf("ret %s\n", ret);
+//			printf("ret %s\n", ret);
 		}
 	}
 	if(ret[strlen(ret) - 1] == '/')		// if the last char in ret is a slash take it off
 		ret[strlen(ret) -1 ] = '\0';
 	
 	return ret;
+}
+
+// return 1 if path name is valid 0 otherwise
+int path_check(const char* path){
+ 	struct stat buffer;
+ 	int status;
+	if(stat(path, &buffer) == 0){
+		return 1;
+	}
+	else {
+		return 0;
+ 	}
 }
 
 // returns string from thring passed minus all chars after last '/'
@@ -285,8 +301,29 @@ char** resizeArray(char** array, int* sizeofarray) {
 	return new;
 }
 
-void my_execute(char **cmd)
+char* commandPath(char* cmd, char* PWD)
 {
+	char * fullPath = getenv("PATH");	
+	char * copyFull = malloc(strlen(fullPath) + 1);
+	strcpy(copyFull,fullPath);
+	char * path = strtok(copyFull,":");
+	char * temp = (char*)malloc(500 * sizeof(char));
+	while (path != NULL)
+	{ 
+		strcpy(temp,path);			
+		strcat(temp,"/");		
+		strcat(temp,cmd);	
+//		printf("%s\n",temp);
+		if (path_check(temp) == 1)		//path exists 
+			break;
+		path = strtok(NULL, ":");
+	}	
+	return temp;			
+}
+
+void my_execute(char** cmd, char* PWD)
+{	
+	char* path = commandPath(cmd[0],PWD);				
 	int status;
 	pid_t pid = fork();
 	if (pid == -1)		//error
@@ -296,8 +333,9 @@ void my_execute(char **cmd)
 	}
 	else if (pid == 0)	//child
 	{
-		execv(cmd[0], cmd);
-	//	fprintf("Problem executing %s\n", cmd[0]);
+		execv(path, cmd);
+	//	fprintf("Problem executing %s\n", cmd[0]);	//not sure why it doesn't like this line
+		printf("Problem executing %s\n", cmd[0]);
 		exit(1);	
 	}
 	else			//parent
@@ -305,9 +343,5 @@ void my_execute(char **cmd)
 		waitpid(pid, &status, 0);
 	}
 }
-
-
-
-
 
 

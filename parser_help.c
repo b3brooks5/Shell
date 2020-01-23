@@ -14,6 +14,8 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 
+
+
 typedef struct
 {
 	char** tokens;
@@ -33,8 +35,8 @@ char** resizeArray(char**, int*);	// returns an array with double the size as wa
 char** createArray(int);		// initiates a new 2d dynamically allocated array
 void deallocateArray(char**, int); 	// destructs a dynamically allocated array
 char* parse_path(char* str, char* PWD);
-void double_period(char* ret);
-
+void double_period(char* ret);		// help parse double period
+int path_check(const char* path);	// cheaks if path namne valid
 char* commandPath(char* cmd, char* PWD);	//returns command added to correct $PATH location
 void my_execute(char** cmd, char* PWD);		//executes commands
 
@@ -159,13 +161,21 @@ void clearInstruction(instruction* instr_ptr)
 // read through tokens
 void interpret(instruction* instr_ptr, char* PWD) {
 	if (!(strcmp(instr_ptr->tokens[0], "echo")) ){		// if statement for all eachos
-		if (!(strcmp(instr_ptr->tokens[1], "$USER")))
+		if (strcmp(instr_ptr->tokens[1], "$USER") == 0)
 			printf("%s\n", getenv("USER"));	
+		else if(strcmp(instr_ptr->tokens[1], "$HOME") == 0 || strcmp(instr_ptr->tokens[1], "$home") == 0){
+			printf("%s\n", getenv("HOME"));
+		}
+		else {
+			printf("%s: undefined variable\n", instr_ptr->tokens[1]);
+		} 
 	}
-	if (strcmp(instr_ptr->tokens[0], "cd") == 0 ){		// changing directory
+	else if (strcmp(instr_ptr->tokens[0], "cd") == 0 ){		// chanbging directory
 		char* ret = parse_path(instr_ptr->tokens[1], PWD);
-		strcpy(PWD, ret);
-		printf("PWD%s\n", PWD);	
+		if( path_check(ret) == 1)	//cheak if path name is valid
+			strcpy(PWD, ret);
+		else
+			printf("no such file or directory\n");
 	}
 	else {						
 		my_execute(instr_ptr->tokens, PWD);
@@ -217,7 +227,6 @@ char* parse_path(char* str, char* PWD){
 		else {		// in base case just get then next name in the path		
 			strcat(ret, array[j]);
 			strcat(ret, "/");
-//			printf("ret %s\n", ret);
 		}
 	}
 	if(ret[strlen(ret) - 1] == '/')		// if the last char in ret is a slash take it off

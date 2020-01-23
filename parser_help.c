@@ -37,8 +37,8 @@ void deallocateArray(char**, int); 	// destructs a dynamically allocated array
 char* parse_path(char* str, char* PWD);
 void double_period(char* ret);		// help parse double period
 int path_check(const char* path);	// cheaks if path namne valid
-char* commandPath(char* cmd, char* PWD);	//returns command added to correct $PATH location
-void my_execute(char** cmd, char* PWD);		//executes commands
+char* commandPath(char* cmd);		//returns command added to correct $PATH location
+void my_execute(char** cmd);			//executes commands
 
 int main() {
 	char* token = NULL;
@@ -178,7 +178,7 @@ void interpret(instruction* instr_ptr, char* PWD) {
 			printf("no such file or directory\n");
 	}
 	else {						
-		my_execute(instr_ptr->tokens, PWD);
+		my_execute(instr_ptr->tokens);
 //		printf("error");
 	}
 	printf("\n");
@@ -310,7 +310,7 @@ char** resizeArray(char** array, int* sizeofarray) {
 	return new;
 }
 
-char* commandPath(char* cmd, char* PWD)
+char* commandPath(char* cmd)
 {
 	char * fullPath = getenv("PATH");	
 	char * copyFull = malloc(strlen(fullPath) + 1);
@@ -330,9 +330,9 @@ char* commandPath(char* cmd, char* PWD)
 	return temp;			
 }
 
-void my_execute(char** cmd, char* PWD)
+void my_execute(char** cmd)
 {	
-	char* path = commandPath(cmd[0],PWD);				
+	char* path = commandPath(cmd[0]);				
 	int status;
 	pid_t pid = fork();
 	if (pid == -1)		//error

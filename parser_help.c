@@ -39,6 +39,7 @@ void double_period(char* ret);		// help parse double period
 int path_check(const char* path);	// cheaks if path namne valid
 char* commandPath(char* cmd);		//returns command added to correct $PATH location
 void my_execute(char** cmd);			//executes commands
+char* resizeTeacher(char* his, char* ours);
 
 int main() {
 	char* token = NULL;
@@ -162,9 +163,35 @@ void interpret(instruction* instr_ptr, char* PWD) {
 		strcpy(dest, &(instr_ptr->tokens[1][1]));
 		printf("%s\n", getenv(dest));			
 	}
+	int i;
+	for (i = 0; i < instr_ptr->numTokens; i++)
+	{
+		if ((instr_ptr->tokens)[i] != NULL)
+		{			
+			if (strstr(instr_ptr->tokens[i],"/") != NULL || strstr(instr_ptr->tokens[i],".") != NULL || strstr(instr_ptr->tokens[i],"~") != NULL)
+			{
+				char * temp = (char*)malloc(500 * sizeof(char));
+				temp = parse_path(instr_ptr->tokens[i], PWD);  
+				if (strlen(temp) > strlen(instr_ptr->tokens[i]))
+				{
+					instr_ptr->tokens[i] = resizeTeacher(instr_ptr->tokens[i], temp);
+				//	free(instr_ptr->tokens[i]);
+				//	instr_ptr->tokens[i] = (char*)malloc(strlen(temp) * sizeof(char));			
+				//	instr_ptr->tokens[i] = temp;
+				//	temp = NULL;
+				//	printf("%s\n",instr_ptr->tokens[i]);
+				}
+				else
+					strcpy(instr_ptr->tokens[i], temp);
+			}
+		}
+	}
 	if (strcmp(instr_ptr->tokens[0], "cd") == 0)
 	{
-		if(strstr(instr_ptr->tokens[1],"/") == NULL)
+		printf("%s\n",instr_ptr->tokens[1]);
+		if (strcmp(instr_ptr->tokens[1],".") == 0)
+		{}
+		else if(strstr(instr_ptr->tokens[1],"/") == NULL && strstr(instr_ptr->tokens[1],"..") == NULL)
 		{
 			char * tempPWD = (char*)malloc(500 * sizeof(char)); 
 			strcpy(tempPWD,PWD);
@@ -172,14 +199,31 @@ void interpret(instruction* instr_ptr, char* PWD) {
 			strcat(tempPWD,instr_ptr->tokens[1]);
 			strcpy(instr_ptr->tokens[1],tempPWD);
 		}
-		if (path_check(instr_ptr->tokens[1]) == 1)
+		else
+		{
+			printf("%s\n",instr_ptr->tokens[1]);//[strlen(instr_ptr->tokens[1]) - 1]);
+			instr_ptr->tokens[1][strlen(instr_ptr->tokens[1])] = '\0';
+	
+		}
+	//	else if (strcmp(instr_ptr->tokens[1],".") == 0)
+	//	{
+//
+	//	}
+	/*	if (path_check(instr_ptr->tokens[1]) == 1)
 		{
 			chdir(instr_ptr->tokens[1]);
 			setenv("PWD",instr_ptr->tokens[1],1);
 		}
 		else
 			printf("No such file or directory\n");
-		
+	
+	*/	if (chdir(instr_ptr->tokens[1]) == -1)
+		{
+			printf("it failed\n");
+		}
+		else
+			setenv("PWD",instr_ptr->tokens[1],1);
+	
 	}
 	else	
 		my_execute(instr_ptr->tokens);
@@ -205,11 +249,20 @@ char* parse_path(char* str, char* PWD){
 		i++;
 		token = strtok(NULL, "/");
 	}
-
+	printf("PWD: %s\n",PWD);
 	char* ret = (char*)malloc(500 * sizeof(char));		// ret will be the new absolute path
 
 	if (strcmp(array[1], "~") == 0){	// if we need to start form home just get home, igore PWD
 		strcpy(ret, getenv("HOME"));
+	}
+	else if (strcmp(array[1], ".") == 0){
+		strcpy(ret, PWD);               // use PWD to keep track of our own path 
+               // strcat(ret, "/");
+	}
+	else if (strcmp(array[1], "..") == 0){
+		strcpy(ret, PWD);               // use PWD to keep track of our own path 
+		double_period(ret);
+      	        strcat(ret, "/");	
 	}
 	else{
 		strcpy(ret, PWD);		// use PWD to keep track of our own path 
@@ -232,7 +285,8 @@ char* parse_path(char* str, char* PWD){
 	}
 	if(ret[strlen(ret) - 1] == '/')		// if the last char in ret is a slash take it off
 		ret[strlen(ret) -1 ] = '\0';
-	
+
+	printf("ret: %s\n",ret);	
 	return ret;
 }
 
@@ -354,4 +408,11 @@ void my_execute(char** cmd)
 	}
 }
 
-
+char* resizeTeacher(char* his, char* ours)
+{
+	free(his);
+        his = (char*)malloc(strlen(ours) * sizeof(char));
+        his = ours;
+        ours = NULL;
+	return his;
+}

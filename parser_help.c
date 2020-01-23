@@ -50,9 +50,8 @@ int main() {
 
 	char* user = getenv("USER");
 	char* machine = getenv("MACHINE");	
-	char* PWD = getenv("PWD");
 	while (1) {
-		//char * path = getenv("PWD");
+		char * PWD = getenv("PWD");
 		// printf("Please enter an instruction: ");
 		printf("%s%s%s%s%s%s", user, "@", machine, ":", PWD, "> ");
 		// loop reads character sequences separated by whitespace
@@ -117,8 +116,6 @@ void addToken(instruction* instr_ptr, char* tok, char* PWD)
 
 	//allocate char array for new token in new slot
 	instr_ptr->tokens[instr_ptr->numTokens] = (char *)malloc((strlen(tok)+1) * sizeof(char));
-	if (strstr(tok,"/") != NULL || strstr(tok,".") != NULL || strstr(tok,"~") != NULL)
-		tok = parse_path(tok, PWD);     	//make absolute path		
 	strcpy(instr_ptr->tokens[instr_ptr->numTokens], tok);
 
 	instr_ptr->numTokens++;
@@ -160,28 +157,32 @@ void clearInstruction(instruction* instr_ptr)
 
 // read through tokens
 void interpret(instruction* instr_ptr, char* PWD) {
-	if (!(strcmp(instr_ptr->tokens[0], "echo")) ){		// if statement for all eachos
-		if (strcmp(instr_ptr->tokens[1], "$USER") == 0)
-			printf("%s\n", getenv("USER"));	
-		else if(strcmp(instr_ptr->tokens[1], "$HOME") == 0 || strcmp(instr_ptr->tokens[1], "$home") == 0){
-			printf("%s\n", getenv("HOME"));
+	if (!(strcmp(instr_ptr->tokens[0], "echo")) && instr_ptr->tokens[1][0] == '$'){          // if statement for all eachos
+		char * dest = (char*)malloc(50 * sizeof(char));  
+		strcpy(dest, &(instr_ptr->tokens[1][1]));
+		printf("%s\n", getenv(dest));			
+	}
+	if (strcmp(instr_ptr->tokens[0], "cd") == 0)
+	{
+		if(strstr(instr_ptr->tokens[1],"/") == NULL)
+		{
+			char * tempPWD = (char*)malloc(500 * sizeof(char)); 
+			strcpy(tempPWD,PWD);
+			strcat(tempPWD,"/");
+			strcat(tempPWD,instr_ptr->tokens[1]);
+			strcpy(instr_ptr->tokens[1],tempPWD);
 		}
-		else {
-			printf("%s: undefined variable\n", instr_ptr->tokens[1]);
-		} 
-	}
-	else if (strcmp(instr_ptr->tokens[0], "cd") == 0 ){		// chanbging directory
-		char* ret = parse_path(instr_ptr->tokens[1], PWD);
-		if( path_check(ret) == 1)	//cheak if path name is valid
-			strcpy(PWD, ret);
+		if (path_check(instr_ptr->tokens[1]) == 1)
+		{
+			chdir(instr_ptr->tokens[1]);
+			setenv("PWD",instr_ptr->tokens[1],1);
+		}
 		else
-			printf("no such file or directory\n");
+			printf("No such file or directory\n");
+		
 	}
-	else {						
+	else	
 		my_execute(instr_ptr->tokens);
-//		printf("error");
-	}
-	printf("\n");
 }
 
 

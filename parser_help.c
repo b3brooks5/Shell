@@ -185,25 +185,31 @@ void interpret(instruction* instr_ptr, char* PWD) {
 
 	int input_redirect = 0, output_redirect = 0, pipe = 0, background = 0;
 
-	for (i = 0; i < instr_ptr->numTokens; i++){
-		if( strcmp((instr_ptr->tokens)[i], "<") == 0)
-			input_redirect = 1;
-		else if (strcmp((instr_ptr->tokens)[i], ">") == 0)
-			output_redirect = 1;
-		else if (strcmp((instr_ptr->tokens)[i], "|") == 0)
-			pipe = 1;
-		else if (strcmp((instr_ptr->tokens)[i], "&") == 0)
-			background = 1;
-	}
+	for (i = 0; i < instr_ptr->numTokens; i++)
+	{
+		if ((instr_ptr->tokens)[i] != NULL)
+		{	
+			if( strcmp(instr_ptr->tokens[i], "<") == 0)
+				input_redirect = 1;
+			else if (strcmp(instr_ptr->tokens[i], ">") == 0)
+				output_redirect = 1;
+			else if (strcmp(instr_ptr->tokens[i], "|") == 0)
+				pipe = 1;
+			else if (strcmp(instr_ptr->tokens[i], "&") == 0)
+				background = 1;
+		}
 
-	
+	}
 	if (input_redirect == 1){
 	}
 	else if(output_redirect == 1){
 	}
 	else if (pipe == 1){
 	}
-	else if (background == 1){
+	else if (background == 1){		//there is an & somewhere in line
+		
+
+
 	}
 	else if (strcmp(instr_ptr->tokens[0], "cd") == 0)
 	{

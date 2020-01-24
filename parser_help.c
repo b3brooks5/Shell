@@ -163,6 +163,7 @@ void interpret(instruction* instr_ptr, char* PWD) {
 		strcpy(dest, &(instr_ptr->tokens[1][1]));
 		printf("%s\n", getenv(dest));			
 	}
+
 	int i;
 	for (i = 0; i < instr_ptr->numTokens; i++)
 	{
@@ -179,7 +180,30 @@ void interpret(instruction* instr_ptr, char* PWD) {
 			}
 		}
 	}
-	if (strcmp(instr_ptr->tokens[0], "cd") == 0)
+
+	int input_redirect = 0, output_redirect = 0, pipe = 0, background = 0;
+
+	for (int i = 0; i < instr_ptr->numTokens; i++){
+		if( strcmp((instr_ptr->tokens)[i], "<") == 0)
+			input_redirect = 1;
+		else if (strcmp((instr_ptr->tokens)[i], ">") == 0)
+			output_redirect = 1;
+		else if (strcmp((instr_ptr->tokens)[i], "|") == 0)
+			pipe = 1;
+		else if (strcmp((instr_ptr->tokens)[i], "&") == 0)
+			background = 1;
+	}
+
+	
+	if (input_redirect == 1){
+	}
+	else if(output_redirect == 1){
+	}
+	else if (pipie == 1){
+	}
+	else if (background == 1){
+	}
+	else if (strcmp(instr_ptr->tokens[0], "cd") == 0)
 	{
 		if (strcmp(instr_ptr->tokens[1],".") == 0)
 		{}
@@ -206,6 +230,11 @@ void interpret(instruction* instr_ptr, char* PWD) {
 	}
 	else	
 		my_execute(instr_ptr->tokens);
+	
+	input_redirect = 0;
+	output_redirect = 0;
+	pipe = 0;
+	background = 0;
 }
 
 

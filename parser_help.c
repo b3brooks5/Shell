@@ -39,7 +39,9 @@ void double_period(char* ret);		// help parse double period
 int path_check(const char* path);	// cheaks if path namne valid
 char* commandPath(char* cmd);		//returns command added to correct $PATH location
 void my_execute(char** cmd);			//executes commands
-char* resizeTeacher(char* his, char* ours);
+char* resizeTeacher(char* his, char* ours);	// resizes origional null terminated array of strings
+void output_redirect(instruction* instr_ptr, char** cmd);
+
 
 int main() {
 	char* token = NULL;
@@ -183,7 +185,7 @@ void interpret(instruction* instr_ptr, char* PWD) {
 
 	int input_redirect = 0, output_redirect = 0, pipe = 0, background = 0;
 
-	for (int i = 0; i < instr_ptr->numTokens; i++){
+	for (i = 0; i < instr_ptr->numTokens; i++){
 		if( strcmp((instr_ptr->tokens)[i], "<") == 0)
 			input_redirect = 1;
 		else if (strcmp((instr_ptr->tokens)[i], ">") == 0)
@@ -199,7 +201,7 @@ void interpret(instruction* instr_ptr, char* PWD) {
 	}
 	else if(output_redirect == 1){
 	}
-	else if (pipie == 1){
+	else if (pipe == 1){
 	}
 	else if (background == 1){
 	}
@@ -412,6 +414,25 @@ void my_execute(char** cmd)
 		waitpid(pid, &status, 0);
 	}
 }
+
+void output_redirect(instruction* instr_ptr, char **cmd){
+	char* path = commandPath(cmd[0]);
+	int fd = opend(path);
+	
+	pid_t pid = fork();
+	if (pid == -1){
+		printf("Error opening file\n");
+	}
+	else if(pid == 0){		// child
+		close(STDIN_FILENO);
+		//dup(fd);
+		close(fd);
+	}
+	else {				// parent
+		close(fd);
+	}
+}
+
 
 char* resizeTeacher(char* his, char* ours)
 {

@@ -173,14 +173,7 @@ void interpret(instruction* instr_ptr, char* PWD) {
 				char * temp = (char*)malloc(500 * sizeof(char));
 				temp = parse_path(instr_ptr->tokens[i], PWD);  
 				if (strlen(temp) > strlen(instr_ptr->tokens[i]))
-				{
 					instr_ptr->tokens[i] = resizeTeacher(instr_ptr->tokens[i], temp);
-				//	free(instr_ptr->tokens[i]);
-				//	instr_ptr->tokens[i] = (char*)malloc(strlen(temp) * sizeof(char));			
-				//	instr_ptr->tokens[i] = temp;
-				//	temp = NULL;
-				//	printf("%s\n",instr_ptr->tokens[i]);
-				}
 				else
 					strcpy(instr_ptr->tokens[i], temp);
 			}
@@ -188,42 +181,28 @@ void interpret(instruction* instr_ptr, char* PWD) {
 	}
 	if (strcmp(instr_ptr->tokens[0], "cd") == 0)
 	{
-		printf("%s\n",instr_ptr->tokens[1]);
 		if (strcmp(instr_ptr->tokens[1],".") == 0)
 		{}
 		else if(strstr(instr_ptr->tokens[1],"/") == NULL && strstr(instr_ptr->tokens[1],"..") == NULL)
-		{
+		{	//if there is not a / and not a ..
 			char * tempPWD = (char*)malloc(500 * sizeof(char)); 
 			strcpy(tempPWD,PWD);
 			strcat(tempPWD,"/");
 			strcat(tempPWD,instr_ptr->tokens[1]);
-			strcpy(instr_ptr->tokens[1],tempPWD);
+			if (strlen(tempPWD) > strlen(instr_ptr->tokens[1]))	//if not enough space
+                        	instr_ptr->tokens[1] = resizeTeacher(instr_ptr->tokens[1], tempPWD);
+			else
+				strcpy(instr_ptr->tokens[1],tempPWD);
 		}
 		else
 		{
-			printf("%s\n",instr_ptr->tokens[1]);//[strlen(instr_ptr->tokens[1]) - 1]);
+			//printf("%s\n",instr_ptr->tokens[1]);
 			instr_ptr->tokens[1][strlen(instr_ptr->tokens[1])] = '\0';
-	
 		}
-	//	else if (strcmp(instr_ptr->tokens[1],".") == 0)
-	//	{
-//
-	//	}
-	/*	if (path_check(instr_ptr->tokens[1]) == 1)
-		{
-			chdir(instr_ptr->tokens[1]);
-			setenv("PWD",instr_ptr->tokens[1],1);
-		}
-		else
-			printf("No such file or directory\n");
-	
-	*/	if (chdir(instr_ptr->tokens[1]) == -1)
-		{
+		if (chdir(instr_ptr->tokens[1]) == -1)		//directory does not exist
 			printf("it failed\n");
-		}
 		else
 			setenv("PWD",instr_ptr->tokens[1],1);
-	
 	}
 	else	
 		my_execute(instr_ptr->tokens);
@@ -249,7 +228,6 @@ char* parse_path(char* str, char* PWD){
 		i++;
 		token = strtok(NULL, "/");
 	}
-	printf("PWD: %s\n",PWD);
 	char* ret = (char*)malloc(500 * sizeof(char));		// ret will be the new absolute path
 
 	if (strcmp(array[1], "~") == 0){	// if we need to start form home just get home, igore PWD
@@ -257,11 +235,10 @@ char* parse_path(char* str, char* PWD){
 	}
 	else if (strcmp(array[1], ".") == 0){
 		strcpy(ret, PWD);               // use PWD to keep track of our own path 
-               // strcat(ret, "/");
+                strcat(ret, "/");
 	}
 	else if (strcmp(array[1], "..") == 0){
 		strcpy(ret, PWD);               // use PWD to keep track of our own path 
-		double_period(ret);
       	        strcat(ret, "/");	
 	}
 	else{
@@ -286,7 +263,7 @@ char* parse_path(char* str, char* PWD){
 	if(ret[strlen(ret) - 1] == '/')		// if the last char in ret is a slash take it off
 		ret[strlen(ret) -1 ] = '\0';
 
-	printf("ret: %s\n",ret);	
+//	printf("ret: %s\n",ret);	
 	return ret;
 }
 
@@ -377,7 +354,6 @@ char* commandPath(char* cmd)
 		strcpy(temp,path);			
 		strcat(temp,"/");		
 		strcat(temp,cmd);	
-//		printf("%s\n",temp);
 		if (path_check(temp) == 1)		//path exists 
 			break;
 		path = strtok(NULL, ":");

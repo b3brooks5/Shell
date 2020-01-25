@@ -175,14 +175,16 @@ void interpret(instruction* instr_ptr, char* PWD) {
 			{
 				char * temp = (char*)malloc(500 * sizeof(char));
 				temp = parse_path(instr_ptr->tokens[i], PWD);  
-				if (strlen(temp) > strlen(instr_ptr->tokens[i]))
+				if (strlen(temp) > strlen(instr_ptr->tokens[i])){
 					instr_ptr->tokens[i] = resizeTeacher(instr_ptr->tokens[i], temp);
+					strcpy(instr_ptr->tokens[i], temp);
+				}
 				else
 					strcpy(instr_ptr->tokens[i], temp);
 			}
 		}
 	}
-
+	
 	int input_redirect = 0, output_redirect = 0, pipe = 0, background = 0;
 
 	for (i = 0; i < instr_ptr->numTokens; i++)
@@ -236,7 +238,7 @@ void interpret(instruction* instr_ptr, char* PWD) {
 		else
 			setenv("PWD",instr_ptr->tokens[1],1);
 	}
-	else	
+	else
 		my_execute(instr_ptr->tokens);
 	
 	input_redirect = 0;
@@ -244,8 +246,6 @@ void interpret(instruction* instr_ptr, char* PWD) {
 	pipe = 0;
 	background = 0;
 }
-
-
 // gets absolute path returned at string
 char* parse_path(char* str, char* PWD){
 	char** array;	// 2D array
@@ -265,6 +265,7 @@ char* parse_path(char* str, char* PWD){
 		i++;
 		token = strtok(NULL, "/");
 	}
+
 	char* ret = (char*)malloc(500 * sizeof(char));		// ret will be the new absolute path
 
 	if (strcmp(array[1], "~") == 0){	// if we need to start form home just get home, igore PWD
@@ -300,6 +301,7 @@ char* parse_path(char* str, char* PWD){
 	if(ret[strlen(ret) - 1] == '/')		// if the last char in ret is a slash take it off
 		ret[strlen(ret) -1 ] = '\0';
 
+	deallocateArray(array, size);
 //	printf("ret: %s\n",ret);	
 	return ret;
 }
@@ -395,14 +397,20 @@ char* commandPath(char* cmd)
 			break;
 		path = strtok(NULL, ":");
 	}	
+	if(strstr(temp, "./"))
+		strcpy(temp, cmd);
+	 
+
 	return temp;			
 }
 
 void my_execute(char** cmd)
 {	
-	char* path = commandPath(cmd[0]);				
+	char* path = (char*)malloc(500 * sizeof(char));				
+	strcpy(path, commandPath(cmd[0]));
 	int status;
 	pid_t pid = fork();
+
 	if (pid == -1)		//error
 	{
 		printf("Error");
@@ -410,6 +418,7 @@ void my_execute(char** cmd)
 	}
 	else if (pid == 0)	//child
 	{
+		printf("Inside child\n");
 		execv(path, cmd);
 	//	fprintf("Problem executing %s\n", cmd[0]);	//not sure why it doesn't like this line
 		printf("Problem executing %s\n", cmd[0]);
@@ -423,7 +432,7 @@ void my_execute(char** cmd)
 
 void output_redirect(instruction* instr_ptr, char **cmd){
 	char* path = commandPath(cmd[0]);
-	int fd = opend(path);
+	int fd = open(path);
 	
 	pid_t pid = fork();
 	if (pid == -1){

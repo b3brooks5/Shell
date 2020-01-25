@@ -22,7 +22,7 @@ typedef struct
 	int numTokens;
 } instruction;
 
-void addToken(instruction* instr_ptr, char* tok, char* PWD);
+void addToken(instruction* instr_ptr, char* tok);
 void printTokens(instruction* instr_ptr);
 void clearInstruction(instruction* instr_ptr);
 void addNull(instruction* instr_ptr);
@@ -34,14 +34,14 @@ int inside(char* str, int i);
 char** resizeArray(char**, int*);	// returns an array with double the size as was previously passed, doubles passed int
 char** createArray(int);		// initiates a new 2d dynamically allocated array
 void deallocateArray(char**, int); 	// destructs a dynamically allocated array
-char* parse_path(char* str, char* PWD);
+char* parse_path(char* str, const char* PWD);
 void double_period(char* ret);		// help parse double period
 int path_check(const char* path);	// cheaks if path namne valid
 char* commandPath(char* cmd);		//returns command added to correct $PATH location
 void my_execute(char** cmd);			//executes commands
 char* resizeTeacher(char* his, char* ours);	// resizes origional null terminated array of strings
-void output_redirect(instruction* instr_ptr, char** cmd);
-
+void output_redirect(char** cmd, int index); 
+void get_paths(instruction* instrList);
 
 int main() {
 	char* token = NULL;
@@ -71,14 +71,14 @@ int main() {
 					if (i-start > 0) {
 						memcpy(temp, token + start, i - start);
 						temp[i-start] = '\0';
-						addToken(&instr, temp, PWD);
+						addToken(&instr, temp);
 					}
 
 					char specialChar[2];
 					specialChar[0] = token[i];
 					specialChar[1] = '\0';
 
-					addToken(&instr,specialChar, PWD);
+					addToken(&instr,specialChar);
 
 					start = i + 1;
 				}
@@ -87,7 +87,7 @@ int main() {
 			if (start < strlen(token)) {
 				memcpy(temp, token + start, strlen(token) - start);
 				temp[i-start] = '\0';
-				addToken(&instr, temp, PWD);
+				addToken(&instr, temp);
 			}
 		
 			//free and reset variables
@@ -100,7 +100,7 @@ int main() {
 		
 		addNull(&instr);
 		interpret(&instr, PWD);
-		printTokens(&instr);
+//		printTokens(&instr);
 		clearInstruction(&instr);
 	}
 	
@@ -109,7 +109,7 @@ int main() {
 
 //reallocates instruction array to hold another token
 //allocates for new token within instruction array
-void addToken(instruction* instr_ptr, char* tok, char* PWD)
+void addToken(instruction* instr_ptr, char* tok)
 {
 	//extend token array to accomodate an additional token
 	if (instr_ptr->numTokens == 0)
@@ -166,6 +166,7 @@ void interpret(instruction* instr_ptr, char* PWD) {
 		printf("%s\n", getenv(dest));			
 	}
 
+	get_paths(instructions);
 	int i;
 	for (i = 0; i < instr_ptr->numTokens; i++)
 	{
@@ -175,26 +176,41 @@ void interpret(instruction* instr_ptr, char* PWD) {
 			{
 				char * temp = (char*)malloc(500 * sizeof(char));
 				temp = parse_path(instr_ptr->tokens[i], PWD);  
+
 				if (strlen(temp) > strlen(instr_ptr->tokens[i])){
 					instr_ptr->tokens[i] = resizeTeacher(instr_ptr->tokens[i], temp);
 					strcpy(instr_ptr->tokens[i], temp);
 				}
 				else
 					strcpy(instr_ptr->tokens[i], temp);
+				
 			}
 		}
 	}
 	
-	int input_redirect = 0, output_redirect = 0, pipe = 0, background = 0;
+	i = 0;
+	while(instr_ptr->tokens[i] != NULL ) {
+		if(strcmp(instr_ptr->tokens[i], "") == 0) {
+			printf("Invalid statemnt\n");
+			return;
+		}
+		i++;
+	}
+	
+	int in_redirect = 0, out_redirect = 0, pipe = 0, background = 0, out_index = 0, in_index = 0;
 
 	for (i = 0; i < instr_ptr->numTokens; i++)
 	{
 		if ((instr_ptr->tokens)[i] != NULL)
 		{	
-			if( strcmp(instr_ptr->tokens[i], "<") == 0)
-				input_redirect = 1;
-			else if (strcmp(instr_ptr->tokens[i], ">") == 0)
-				output_redirect = 1;
+			if( strcmp(instr_ptr->tokens[i], "<") == 0){
+				in_redirect = 1;
+				in_index = i;
+			}
+			else if (strcmp(instr_ptr->tokens[i], ">") == 0){
+				out_redirect = 1;
+				out_index = i;
+			}
 			else if (strcmp(instr_ptr->tokens[i], "|") == 0)
 				pipe = 1;
 			else if (strcmp(instr_ptr->tokens[i], "&") == 0)
@@ -202,9 +218,11 @@ void interpret(instruction* instr_ptr, char* PWD) {
 		}
 
 	}
-	if (input_redirect == 1){
+	if (in_redirect == 1){
 	}
-	else if(output_redirect == 1){
+	else if(out_redirect == 1){
+		printTokens(instr_ptr);
+		output_redirect(instr_ptr->tokens, out_index);
 	}
 	else if (pipe == 1){
 	}
@@ -233,32 +251,35 @@ void interpret(instruction* instr_ptr, char* PWD) {
 			//printf("%s\n",instr_ptr->tokens[1]);
 			instr_ptr->tokens[1][strlen(instr_ptr->tokens[1])] = '\0';
 		}
+		
 		if (chdir(instr_ptr->tokens[1]) == -1)		//directory does not exist
-			printf("it failed\n");
+			printf("No such directory\n");
 		else
 			setenv("PWD",instr_ptr->tokens[1],1);
 	}
 	else
 		my_execute(instr_ptr->tokens);
 	
-	input_redirect = 0;
-	output_redirect = 0;
+/*	in_redirect = 0;
+	out_redirect = 0;
 	pipe = 0;
 	background = 0;
+	out_index = 0;
+	in_index = 0;
+*/
 }
 // gets absolute path returned at string
-char* parse_path(char* str, char* PWD){
+char* parse_path(char* path, const char* PWD){
 	char** array;	// 2D array
 	int size = 5;	// initial size
+	array = createArray(size);
 
-	array = createArray(size);	// create array
-
-	char* token = strtok(str, "/");		// start parsing path
+	char* token = strtok(path, "/");
 	int i = 1, j = 0, parsed = 0;
 
-	while(token != NULL){			// will end with a list of all names in path seperated by /
+	while(token != NULL){			// will end with a list of all strings in path seperated by /
 		if(i == size - 1){
-			array = resizeArray(array, &size);
+			array = resizeArray(array, &size);	// cheak for resize
 		}
 	
 		strcpy(array[i], token);
@@ -268,32 +289,36 @@ char* parse_path(char* str, char* PWD){
 
 	char* ret = (char*)malloc(500 * sizeof(char));		// ret will be the new absolute path
 
-	if (strcmp(array[1], "~") == 0){	// if we need to start form home just get home, igore PWD
+	// Cheaking inly first element
+	if (strcmp(array[1], "~") == 0){
 		strcpy(ret, getenv("HOME"));
+		strcpy(array[1], "");	// make empty so not copied twice
 	}
 	else if (strcmp(array[1], ".") == 0){
-		strcpy(ret, PWD);               // use PWD to keep track of our own path 
+		strcpy(ret, PWD); 
                 strcat(ret, "/");
 	}
 	else if (strcmp(array[1], "..") == 0){
-		strcpy(ret, PWD);               // use PWD to keep track of our own path 
+		strcpy(ret, PWD); 
       	        strcat(ret, "/");	
 	}
 	else{
-		strcpy(ret, PWD);		// use PWD to keep track of our own path 
+		strcpy(ret, PWD); 
 		strcat(ret, "/");
 		strcat(ret, array[0]);		// add slash and path name
 	}
 
-	for ( j = 1; j < i; j++){		// loop through the rest of the names that we seperated by /
-		if(strcmp(array[j], ".") == 0)		{}	// '.' doesn't change directory
-		else if(strcmp(array[j], "~") == 0 )	{	// already started at HOME so just add slash
-			strcat(ret, "/");
+	// for all token after the first
+	for ( j = 1; j < i; j++){
+		if(strcmp(array[j], ".") == 0)	{}		// '.' doesn't change directory
+		else if(strcmp(array[j], "~") == 0 ){		// cannot appear in remainder of path
+			ret = "";
+			break;
 		}
 		else if(strcmp(array[j], "..") == 0){
-			double_period(ret);	// erases chars up to next '/' or until string is empty
+			double_period(ret);			// erases chars up to next '/'
  		}
-		else {		// in base case just get then next name in the path		
+		else {						// just get the next name in the path		
 			strcat(ret, array[j]);
 			strcat(ret, "/");
 		}
@@ -302,7 +327,7 @@ char* parse_path(char* str, char* PWD){
 		ret[strlen(ret) -1 ] = '\0';
 
 	deallocateArray(array, size);
-//	printf("ret: %s\n",ret);	
+
 	return ret;
 }
 
@@ -332,20 +357,20 @@ void double_period(char* ret){
 // releases memory of dynamically allocated array 
 void deallocateArray(char** arr, int size) {
 	int i;
-	for (i = 0; i < size; i++) {
+	for (i = 0; i < size; i++) 
 		free(arr[i]);
-	}
-	free(arr);	// releasing memory
+	
+	free(arr);	
 }
 
 // create new dynamic array of size 'size'
 char** createArray(int size) {
-	char** newarr = (char**)malloc(size * sizeof(char*));
+	char** newarr = (char**)malloc(size * sizeof(char*));	// size of array
 
 	int i;
-	for (i = 0; i < size; i++) {	// allocates each index in the array
+	for (i = 0; i < size; i++) 			// size of each index
 		newarr[i] = (char*)malloc(100 * sizeof(char));
-	}
+	
 
 	return newarr;
 }
@@ -362,20 +387,19 @@ char** resizeArray(char** array, int* sizeofarray) {
 	
 	// allocate each index of new array
 	int i;	
-	for (i = 0; i < *sizeofarray; i++) {
+	for (i = 0; i < *sizeofarray; i++) 
 		new[i] = (char*)malloc(100 * sizeof(char));
-	}
+	
 
 	// copy contents from old to new
-	for (i = 0; i < oldsize; i++) {
+	for (i = 0; i < oldsize; i++) 
 		strcpy(new[i], array[i]);
-		//new[i] = array[i];
-	}
+
 
 	// free old array
-	for (i = 0; i < oldsize; i++) {
+	for (i = 0; i < oldsize; i++) 
 		free(array[i]);
-	}
+	
 	free(array);
 
 	return new;
@@ -418,7 +442,6 @@ void my_execute(char** cmd)
 	}
 	else if (pid == 0)	//child
 	{
-		printf("Inside child\n");
 		execv(path, cmd);
 	//	fprintf("Problem executing %s\n", cmd[0]);	//not sure why it doesn't like this line
 		printf("Problem executing %s\n", cmd[0]);
@@ -430,26 +453,46 @@ void my_execute(char** cmd)
 	}
 }
 
-void output_redirect(instruction* instr_ptr, char **cmd){
-	char* path = commandPath(cmd[0]);
-	int fd = open(path);
+void output_redirect(char** cmd, int index){
+	char* file = cmd[index + 1]; // grab the name of the file
+	int fd = open(file);
+	int status, i = 0;
+
 	
-	pid_t pid = fork();
+	instruction Myinstr;		// create our own null terminated list
+	Myinstr.tokens = NULL;
+	Myinstr.numTokens = 0;
+	
+	for (i = 0; i < index; i++){	// copy up in 'index' where the > is located
+		char * temp = (char*)malloc((strlen(cmd[i]) + 1) * sizeof(char));
+		strcpy(temp, cmd[i]);
+		addToken(&Myinstr, temp);
+	}
+	addNull(&Myinstr);	
+	
+	pid_t pid = fork();		// begin fork
 	if (pid == -1){
 		printf("Error opening file\n");
+		exit(1);
 	}
 	else if(pid == 0){		// child
-		close(STDIN_FILENO);
-		//dup(fd);
+		close(1);
+		dup(fd);
 		close(fd);
+		
+		printTokens(&Myinstr);		
+		
+		execv(cmd[0], Myinstr.tokens);
+
+		printf("Problem executing\n");
+		exit(1);
 	}
 	else {				// parent
 		close(fd);
 	}
 }
 
-
-char* resizeTeacher(char* his, char* ours)
+char* resizeTeacher(char* his, char* ours) // will resize the curent string in the instruction struct
 {
 	free(his);
         his = (char*)malloc(strlen(ours) * sizeof(char));

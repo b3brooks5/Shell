@@ -13,7 +13,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
-
+#include <fcntl.h>
 
 
 typedef struct
@@ -41,7 +41,7 @@ char* commandPath(char* cmd);		//returns command added to correct $PATH location
 void my_execute(char** cmd);			//executes commands
 char* resizeTeacher(char* his, char* ours);	// resizes origional null terminated array of strings
 void output_redirect(char** cmd, int index); 
-void get_paths(instruction* instrList);
+void input_redirect(char**cmd, int index);
 
 int main() {
 	char* token = NULL;
@@ -166,7 +166,7 @@ void interpret(instruction* instr_ptr, char* PWD) {
 		printf("%s\n", getenv(dest));			
 	}
 
-	get_paths(instructions);
+
 	int i;
 	for (i = 0; i < instr_ptr->numTokens; i++)
 	{
@@ -218,10 +218,11 @@ void interpret(instruction* instr_ptr, char* PWD) {
 		}
 
 	}
+
 	if (in_redirect == 1){
+		input_redirect(instr_ptr->tokens, in_index);
 	}
 	else if(out_redirect == 1){
-		printTokens(instr_ptr);
 		output_redirect(instr_ptr->tokens, out_index);
 	}
 	else if (pipe == 1){
@@ -260,13 +261,6 @@ void interpret(instruction* instr_ptr, char* PWD) {
 	else
 		my_execute(instr_ptr->tokens);
 	
-/*	in_redirect = 0;
-	out_redirect = 0;
-	pipe = 0;
-	background = 0;
-	out_index = 0;
-	in_index = 0;
-*/
 }
 // gets absolute path returned at string
 char* parse_path(char* path, const char* PWD){
@@ -421,9 +415,10 @@ char* commandPath(char* cmd)
 			break;
 		path = strtok(NULL, ":");
 	}	
-	if(strstr(temp, "./"))
+
+	if(strstr(temp, "./")) 
 		strcpy(temp, cmd);
-	 
+
 
 	return temp;			
 }
@@ -455,7 +450,7 @@ void my_execute(char** cmd)
 
 void output_redirect(char** cmd, int index){
 	char* file = cmd[index + 1]; // grab the name of the file
-	int fd = open(file);
+	int fd = open(file, O_RDWR|O_CREAT|O_TRUNC);
 	int status, i = 0;
 
 	
@@ -473,25 +468,62 @@ void output_redirect(char** cmd, int index){
 	pid_t pid = fork();		// begin fork
 	if (pid == -1){
 		printf("Error opening file\n");
-		exit(1);
 	}
 	else if(pid == 0){		// child
 		close(1);
 		dup(fd);
 		close(fd);
 		
-		printTokens(&Myinstr);		
-		
-		execv(cmd[0], Myinstr.tokens);
+		char * path = commandPath(cmd[0]);
+
+		execv(path, Myinstr.tokens);
 
 		printf("Problem executing\n");
-		exit(1);
 	}
 	else {				// parent
+		waitpid(pid, &status, 0);
 		close(fd);
 	}
 }
 
+void input_redirect(char**cmd, int index){
+	char* file = cmd[index + 1]; // grab the name of the file
+	int fd = open(file, O_RDONLY);
+	int status, i = 0;
+
+
+	instruction Myinstr;		// create our own null terminated list
+	Myinstr.tokens = NULL;
+	Myinstr.numTokens = 0;
+	
+	for (i = 0; i < index; i++){	// copy up in 'index' where the > is located
+		char * temp = (char*)malloc((strlen(cmd[i]) + 1) * sizeof(char));
+		strcpy(temp, cmd[i]);
+		addToken(&Myinstr, temp);
+	}
+	addNull(&Myinstr);	
+	
+	pid_t pid = fork();		// begin fork
+	if (pid == -1){
+		printf("Error opening file\n");
+	}
+	else if(pid == 0){		// child
+		close(0);
+		dup(fd);
+		close(fd);
+		
+		char * path = commandPath(cmd[0]);
+	
+		execv(path, Myinstr.tokens);
+
+		printf("Problem executing\n");
+	}
+	else {				// parent
+		waitpid(pid, &status, 0);
+		close(fd);
+	}
+
+}
 char* resizeTeacher(char* his, char* ours) // will resize the curent string in the instruction struct
 {
 	free(his);

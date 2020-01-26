@@ -243,6 +243,11 @@ void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, i
 	}
 
 	if (in_redirect == 1 && out_redirect == 1){
+		if( redirect_check(instr_ptr->tokens, in_index) == 1 && redirect_check(instr_ptr->tokens, out_index) == 1)
+			input_redirect(instr_ptr->tokens, in_index);
+		else 
+			printf("Command not found\n");
+
 		in_out_redirect(instr_ptr->tokens, in_index, out_index);
 	}
 	else if (in_redirect == 1){

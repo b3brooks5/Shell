@@ -44,7 +44,7 @@ char* resizeTeacher(char* his, char* ours);	// resizes origional null terminated
 void output_redirect(char** cmd, int index); 
 void input_redirect(char**cmd, int index);
 void in_out_redirect(char** cmd, int in, int out);
-
+int redirect_check(char** cmd, int index);
 
 int main() {
 	char* token = NULL;
@@ -226,10 +226,16 @@ void interpret(instruction* instr_ptr, char* PWD) {
 		in_out_redirect(instr_ptr->tokens, in_index, out_index);
 	}
 	else if (in_redirect == 1){
-		input_redirect(instr_ptr->tokens, in_index);
+		if( redirect_check(instr_ptr->tokens, in_index) == 1)
+			input_redirect(instr_ptr->tokens, in_index);
+		else 
+			printf("Command not found\n");
 	}
 	else if(out_redirect == 1){
-		output_redirect(instr_ptr->tokens, out_index);
+		if( redirect_check(instr_ptr->tokens, out_index) == 1)
+			output_redirect(instr_ptr->tokens, out_index);
+		else
+			printf("Command not found\n");
 	}
 	else if (pipe == 1){
 	}
@@ -562,6 +568,7 @@ void in_out_redirect(char** cmd, int in, int out){
 	
 	
 	pid_t pid = fork();		// begin fork
+	printf("pid %d\n", pid);
 	if (pid == -1){
 		printf("Error opening file\n");
 	}
@@ -573,7 +580,7 @@ void in_out_redirect(char** cmd, int in, int out){
 		close(1);		// output
 		dup(Output_fd);
 		close(Output_fd);
-
+		printf("In here\n");
 		char * path = commandPath(cmd[0]);
 
 		execv(path, Myinstr.tokens);
@@ -585,9 +592,20 @@ void in_out_redirect(char** cmd, int in, int out){
 		close(Input_fd);
 		close(Output_fd);
 	}
-
 }
 
+// returns 1 if good redirect call 0 otherwise
+int redirect_check(char** cmd, int index){
+	if(path_check(cmd[0]) == 1) { // if index 1 is a command
+		if(strcmp(cmd[index], ">") && cmd[index +1] != NULL && path_check(cmd[index +1]) == 1){
+			return 1;
+		}
+		else if (strcmp(cmd[index], "<") && cmd[index + 1] != NULL){
+			return 1;
+		} 
+	}
+	return 0;
+}
 char* resizeTeacher(char* his, char* ours) // will resize the curent string in the instruction struct
 {
 	free(his);

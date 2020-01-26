@@ -22,14 +22,12 @@ typedef struct
 	int numTokens;
 } instruction;
 
-void addToken(instruction* instr_ptr, char* tok, char* PWD);
+void addToken(instruction* instr_ptr, char* tok); 
 void printTokens(instruction* instr_ptr);
 void clearInstruction(instruction* instr_ptr);
 void addNull(instruction* instr_ptr);
 
-void interpret(instruction* instr_ptr, char* PWD);
-
-int inside(char* str, int i);
+void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, int size, int* current);
 
 char** resizeArray(char**, int*);	// returns an array with double the size as was previously passed, doubles passed int
 char** createArray(int);		// initiates a new 2d dynamically allocated array
@@ -42,6 +40,15 @@ void my_execute(char** cmd);			//executes commands
 char* resizeTeacher(char* his, char* ours);	// resizes origional null terminated array of strings
 void output_redirect(instruction* instr_ptr, char** cmd);
 
+void is_background(instruction* instr_ptr, char** backProc, pid_t** id, int size, int* current);//determine if background or foreground process
+void addProcess(char** backProc, pid_t ** id, int size, int current);
+int deleteProcess(char** backProc, pid_t ** id, char* procToRem, int size, int current);
+void processBegin(char** cmd,char** backProc, pid_t ** id, int size, int current);
+void processEnd(char** backProc, pid_t ** id, int size, int current);
+char* commandLine(instruction* instr_ptr);	//returns command line as one string
+char** makeCopy(instruction* instr_ptr);	//makes copy without the &
+pid_t** idArray(int size);	                //creates id array
+pid_t** resizeId(pid_t** array, int* sizeofarray); //returns an array with double the size as was previously passed, doubles passed int
 
 int main() {
 	char* token = NULL;
@@ -51,6 +58,13 @@ int main() {
 	instr.tokens = NULL;
 	instr.numTokens = 0;
 
+	char** process = NULL;			//background process commands
+	pid_t** id = NULL;			//process id's	
+	int size = 5;				//capacity of arrays (both the same)
+ 	int current = 0;			//current size of arrays
+	process = createArray(size);		//create arrays of size 5
+	id = idArray(size);		
+				
 	char* user = getenv("USER");
 	char* machine = getenv("MACHINE");	
 	while (1) {
@@ -71,14 +85,14 @@ int main() {
 					if (i-start > 0) {
 						memcpy(temp, token + start, i - start);
 						temp[i-start] = '\0';
-						addToken(&instr, temp, PWD);
+						addToken(&instr, temp);
 					}
-
+  
 					char specialChar[2];
 					specialChar[0] = token[i];
 					specialChar[1] = '\0';
 
-					addToken(&instr,specialChar, PWD);
+					addToken(&instr,specialChar);
 
 					start = i + 1;
 				}
@@ -87,7 +101,7 @@ int main() {
 			if (start < strlen(token)) {
 				memcpy(temp, token + start, strlen(token) - start);
 				temp[i-start] = '\0';
-				addToken(&instr, temp, PWD);
+				addToken(&instr, temp);
 			}
 		
 			//free and reset variables
@@ -99,7 +113,9 @@ int main() {
 		} while ('\n' != getchar());    //until end of line is reached
 		
 		addNull(&instr);
-		interpret(&instr, PWD);
+		interpret(&instr, PWD, process, id, size, &current);
+		
+		processEnd(process, id, size, current);
 		printTokens(&instr);
 		clearInstruction(&instr);
 	}
@@ -109,7 +125,7 @@ int main() {
 
 //reallocates instruction array to hold another token
 //allocates for new token within instruction array
-void addToken(instruction* instr_ptr, char* tok, char* PWD)
+void addToken(instruction* instr_ptr, char* tok)
 {
 	//extend token array to accomodate an additional token
 	if (instr_ptr->numTokens == 0)
@@ -159,7 +175,7 @@ void clearInstruction(instruction* instr_ptr)
 }
 
 // read through tokens
-void interpret(instruction* instr_ptr, char* PWD) {
+void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, int size, int* current) {
 	if (!(strcmp(instr_ptr->tokens[0], "echo")) && instr_ptr->tokens[1][0] == '$'){          // if statement for all eachos
 		char * dest = (char*)malloc(50 * sizeof(char));  
 		strcpy(dest, &(instr_ptr->tokens[1][1]));
@@ -207,7 +223,7 @@ void interpret(instruction* instr_ptr, char* PWD) {
 	else if (pipe == 1){
 	}
 	else if (background == 1){		//there is an & somewhere in line
-		
+		is_background(instr_ptr, backProc, id, size, current);		
 
 
 	}
@@ -379,6 +395,42 @@ char** resizeArray(char** array, int* sizeofarray) {
 	return new;
 }
 
+pid_t** idArray(int size)                      //creates id array
+{
+	pid_t** newarr = (pid_t**)malloc(size * sizeof(pid_t*));
+        int i;
+        for (i = 0; i < size; i++) {           //allocates each index in the array
+                newarr[i] = (pid_t*)malloc(100 * sizeof(pid_t));
+        }
+        return newarr;	
+}
+ 
+pid_t** resizeId(pid_t** array, int* sizeofarray) //returns an array with double the size as was previously passed, doubles passed int
+{	
+	//keep origional size for dealocation, double it for new array	
+	int oldsize = *sizeofarray;
+        *sizeofarray = oldsize * 2;
+	//create new array
+	pid_t ** new = (pid_t**)malloc(*sizeofarray * sizeof(pid_t*));	
+	//allocate each index of new array
+	int i;
+        for (i = 0; i < *sizeofarray; i++) {
+                new[i] = (pid_t*)malloc(100 * sizeof(pid_t));
+        }			
+	//copy contents from old to new
+	for (i = 0; i < oldsize; i++) {
+        //        strcpy(new[i], array[i]);
+        	new[i] = array[i]; 
+	}			
+	//free old array
+	for (i = 0; i < oldsize; i++) {
+                free(array[i]);
+        }
+        free(array);
+
+        return new;	
+}
+
 char* commandPath(char* cmd)
 {
 	char * fullPath = getenv("PATH");	
@@ -423,7 +475,7 @@ void my_execute(char** cmd)
 
 void output_redirect(instruction* instr_ptr, char **cmd){
 	char* path = commandPath(cmd[0]);
-	int fd = opend(path);
+	int fd = open(path);
 	
 	pid_t pid = fork();
 	if (pid == -1){
@@ -448,3 +500,158 @@ char* resizeTeacher(char* his, char* ours)
         ours = NULL;
 	return his;
 }
+
+void is_background(instruction* instr_ptr, char** backProc, pid_t** id, int size, int* current) //determine if background or foreground process
+{
+	if (strcmp(instr_ptr->tokens[0],"&") == 0)					//if & CMD
+	{
+		if (strcmp(instr_ptr->tokens[instr_ptr->numTokens - 2],"&") == 0)	//& CMD &
+		{
+			printf("& CMD &\n");
+		}
+		else
+		{
+			printf("& CMD\n");	
+		}
+	}
+	else if (strcmp(instr_ptr->tokens[instr_ptr->numTokens - 2],"&") == 0)		//CMD &
+	{										//need to execute in background
+		int i;
+		int count = 0;		//keep track of number of &'s for error checking 			
+		int input_redirect = 0, output_redirect = 0, pipe = 0;
+		for (i = 0; i < instr_ptr->numTokens; i++)
+        	{
+                	if ((instr_ptr->tokens)[i] != NULL)
+               		{
+				if (strcmp(instr_ptr->tokens[i], "|") == 0)		//there is a pipe
+					pipe = 1;
+				else if (strcmp(instr_ptr->tokens[i], "<") == 0 || strcmp(instr_ptr->tokens[i], ">") == 0) 
+					input_redirect = 1;					
+				else if (strcmp(instr_ptr->tokens[i], ">") == 0)
+					output_redirect = 1;
+				else if (strcmp(instr_ptr->tokens[i], "&") == 0) 
+					count++;
+			}
+		}	
+		if (count > 1)
+			printf("Error: Invalid Syntax\n");		
+		else if (pipe == 1)
+		{
+			//call piping 
+
+		}
+		else if (input_redirect == 1 && output_redirect == 1)
+		{ }
+		else if (input_redirect == 1)
+		{ }
+		else if (output_redirect == 1)
+		{ }
+		else		//CMD &
+		{
+			char * line = commandLine(instr_ptr);
+			if(*current == size - 1)		//make more space if no more room 
+			{
+                	 	backProc = resizeArray(backProc, &size);
+                		id = resizeId(id, &size);
+			}
+			backProc[*current] = line;      //stores the command line
+			char ** command = makeCopy(instr_ptr);
+			processBegin(command,backProc,id,size,*current);
+			*current = *current + 1;          //first process starts at 1		
+
+		}		
+	}
+	else
+		printf("Error: Invalid Syntax\n");				
+}
+
+char* commandLine(instruction* instr_ptr)		//returns all the tokens for that lines as one string 
+{
+	char * line = (char*)malloc(500 * sizeof(char));
+ 	int i;
+	for (i = 0; i < instr_ptr->numTokens; i++)
+	{
+		if ((instr_ptr->tokens)[i] != NULL && strcmp(instr_ptr->tokens[i],"&") != 0)		
+		{
+			strcat(line,(instr_ptr->tokens)[i]);		
+			strcat(line, " " );
+		}
+	}	
+	return line;
+}
+
+//prints message and begins execution
+void processBegin(char** cmd, char** backProc, pid_t** id, int size, int current)
+{
+	char* path = commandPath(cmd[0]);
+        int status;
+        pid_t pid = fork();
+	if (pid != 0)		//so message is only printed once
+	{
+        	*id[current] = pid;				//add pid to pid array	
+		printf("[%d] [%d]\n",current, *id[current]);    //prints message
+	}
+	if (pid == -1)          //error
+        {
+                printf("Error");
+                exit(1);
+        }
+        else if (pid == 0)      //child
+        {				
+	        execv(path, cmd);
+        	printf("Problem executing %s\n", cmd[0]);
+        	exit(1);
+        }
+ 
+}
+
+char** makeCopy(instruction* instr_ptr)        //makes copy without the &
+{
+	int size = instr_ptr->numTokens - 1;
+	instruction instr;
+	instr.tokens = NULL;
+	instr.numTokens = 0; 
+	int i;
+	for (i = 0; i < size; i++)
+	{
+		if (strcmp(instr_ptr->tokens[i],"&") == 0)
+			continue;	
+		else if ((instr_ptr->tokens)[i] != NULL)
+			addToken(&instr, instr_ptr->tokens[i]); 
+	}
+	addNull(&instr);
+	return instr.tokens;
+}
+
+int deleteProcess(char** backProc, pid_t ** id, char* procToRem, int size, int current)
+{
+/*	int i;
+	for (i = 0; i < *current; i++)
+	{
+		if (strcmp(backProc[i],procToRem) == 0)	//found the process to remove
+		{
+			backProc[i] = backProc[i+1];  			
+			
+			*current = *current - 1;
+			break;
+		}
+	}
+	return *current;
+*/}
+
+void processEnd(char** backProc, pid_t** id, int size, int current)
+{
+	int status;
+	int i;
+	printf("%d\n",current);
+	for (i = 0; i < current; i++)
+	{
+		if (waitpid((*id)[i], &status, WNOHANG) == (*id)[i])				//done running
+		{
+			printf("[%d]+ [%s]",i, backProc[i]);	//execution complete message
+			//call remove function
+		}
+	}
+}
+
+

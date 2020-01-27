@@ -47,7 +47,7 @@ void check_instruction_paths(instruction* instr, const char* PWD);
 int redirect_check(char** cmd, int index);
 
 // Piping
-void pipeing();
+void piping(char** cmd, int index);
 
 // backgound processing
 void is_background(instruction* instr_ptr, char** backProc, pid_t** id, int size, int* current);//determine if background or foreground process
@@ -227,8 +227,10 @@ void check_instruction_type(instruction* instr, int * inDirect, int * outDirect,
 				*outDirect = 1;
 				*outIndex = i;
 			}
-			else if (strcmp(instr->tokens[i], "|") == 0)
+			else if (strcmp(instr->tokens[i], "|") == 0) {
 				*pipe = 1;
+				*inIndex = i;
+			}
 			if (strcmp(instr->tokens[i], "&") == 0)
 				*background = 1;
 		}
@@ -259,7 +261,6 @@ void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, i
 
 	check_instruction_type(instr_ptr, &in_redirect, &out_redirect, &pipe, &background, &out_index, &in_index);
 	
-
 	
 	if (in_redirect == 1 && out_redirect == 1){
 		if( redirect_check(instr_ptr->tokens, in_index) == 1 && redirect_check(instr_ptr->tokens, out_index) == 1)
@@ -280,6 +281,7 @@ void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, i
 			printf("Command not found\n");
 	}
 	else if (pipe == 1){
+		piping(instr_ptr->tokens, in_index);
 	}
 	else if (background == 1){		//there is an & somewhere in line
 		is_background(instr_ptr, backProc, id, size, current);
@@ -572,13 +574,14 @@ void output_redirect(char** cmd, int index){
 		waitpid(pid, &status, 0);
 		close(fd);
 	}
+	clearInstruction(&Myinstr);
+
 }
 
 void input_redirect(char** cmd, int index){
 	char* file = cmd[index + 1]; // grab the name of the file
 	int fd = open(file, O_RDONLY);
 	int status, i = 0;
-
 
 	instruction Myinstr;		// create our own null terminated list
 	Myinstr.tokens = NULL;
@@ -610,6 +613,7 @@ void input_redirect(char** cmd, int index){
 		waitpid(pid, &status, 0);
 		close(fd);
 	}
+	clearInstruction(&Myinstr);
 
 }
 
@@ -660,6 +664,8 @@ void in_out_redirect(char** cmd, int in, int out){
 		close(Input_fd);
 		close(Output_fd);
 	}
+	clearInstruction(&Myinstr);
+
 }
 
 // returns 1 if good redirect call 0 otherwise
@@ -674,6 +680,70 @@ int redirect_check(char** cmd, int index){
 	}
 	return 0;
 }
+
+void piping(char** cmd, int index){
+	instruction command1;		// create our own null terminated list
+	command1.tokens = NULL;
+	command1.numTokens = 0;
+	int status, i = 0;
+	
+	for (i = 0; i < index; i++){	// copy up in the lowest command
+		char * temp = (char*)malloc((strlen(cmd[i]) + 1) * sizeof(char));
+		strcpy(temp, cmd[i]);
+		addToken(&command1, temp);
+	}
+	addNull(&command1);		// make null terminated
+
+	instruction command2;		// create our own null terminated list
+	command2.tokens = NULL;
+	command2.numTokens = 0;
+	
+	i = index + 1;
+
+	while ( cmd[i] != NULL){
+		char * temp = (char*)malloc((strlen(cmd[i]) + 1) * sizeof(char));
+		strcpy(temp, cmd[i]);
+		addToken(&command2, temp);
+		i++;
+	}
+	addNull(&command2);		// make null terminated
+	
+	int FDcmd1 = open(command1.tokens[0], O_RDONLY);
+
+	int FDcmd2 = open(command2.tokens[0], O_RDONLY);
+
+	pid_t pid = fork();		
+	int fd[2] = { FDcmd1, FDcmd2 };
+	
+	if (pid == 0) {		// child
+		pipe(fd);
+		if(fork() == 0){	// grand child
+			close(1);
+			dup(fd[1]);
+			close(fd[0]);
+			close(fd[1]);
+			char* path = commandPath(command1.tokens[0]);
+			execv(path, command1.tokens);
+
+		}
+		else {
+			waitpid(pid, &status, 0);
+			close(0);
+			dup(fd[0]);
+			close(fd[0]);
+			close(fd[1]);
+			char* path = commandPath(command2.tokens[0]);
+			execv(path, command2.tokens);
+		}
+	}
+	else {
+		waitpid(pid, &status, 0);
+		waitpid(pid, &status, 0);	
+	}
+	clearInstruction(&command1);
+	clearInstruction(&command2);
+}
+
 char* resizeTeacher(char* his, char* ours) // will resize the curent string in the instruction struct
 {
 	free(his);

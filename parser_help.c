@@ -39,13 +39,17 @@ char* commandPath(char* cmd);		//returns command added to correct $PATH location
 void my_execute(char** cmd);			//executes commands
 char* resizeTeacher(char* his, char* ours);	// resizes origional null terminated array of strings
 
+// redirection
 void output_redirect(char** cmd, int index);
 void input_redirect(char**cmd, int index);
 void in_out_redirect(char** cmd, int in, int out);
-
+void check_instruction_paths(instruction* instr, const char* PWD);
 int redirect_check(char** cmd, int index);
 
+// Piping
+void pipeing();
 
+// backgound processing
 void is_background(instruction* instr_ptr, char** backProc, pid_t** id, int size, int* current);//determine if background or foreground process
 void addProcess(char** backProc, pid_t ** id, int size, int current);
 int deleteProcess(char** backProc, pid_t ** id, char* procToRem, int size, int current);
@@ -79,6 +83,9 @@ int main() {
 		// printf("Please enter an instruction: ");
 		printf("%s%s%s%s%s%s", user, "@", machine, ":", PWD, "> ");
 		// loop reads character sequences separated by whitespace
+//		if(getchar() == '\n')	// if enter just run again
+//			continue; 
+
 		do {
 			//scans for next token and allocates token var to size of scanned token
 			scanf("%ms", &token);
@@ -117,13 +124,14 @@ int main() {
 
 			token = NULL;
 			temp = NULL;
+
 		} while ('\n' != getchar());    //until end of line is reached
 
 		addNull(&instr);
 		interpret(&instr, PWD, process, id, size, &current);
-
+		
 		processEnd(process, id, size, current);
-		printTokens(&instr);
+//		printTokens(&instr);
 		clearInstruction(&instr);
 	}
 
@@ -181,6 +189,52 @@ void clearInstruction(instruction* instr_ptr)
 	instr_ptr->numTokens = 0;
 }
 
+// get the path variables through the entire instruction
+void check_instruction_paths(instruction* instr, const char* PWD){
+	int i = 0;
+	for (i = 0; i < instr->numTokens; i++)
+	{
+		if ((instr->tokens)[i] != NULL)
+		{
+			if (strstr(instr->tokens[i],"/") != NULL || strstr(instr->tokens[i],".") != NULL || strstr(instr->tokens[i],"~") != NULL)
+			{
+				char * temp = (char*)malloc(500 * sizeof(char));
+				temp = parse_path(instr->tokens[i], PWD);
+
+				if (strlen(temp) > strlen(instr->tokens[i])){
+					instr->tokens[i] = resizeTeacher(instr->tokens[i], temp);
+					strcpy(instr->tokens[i], temp);
+				}
+				else
+					strcpy(instr->tokens[i], temp);
+			}
+		}
+	}
+}
+
+// change the flags for each variable based on what commands are in instr, values chaged to 1 if instruction needs to be executed
+void check_instruction_type(instruction* instr, int * inDirect, int * outDirect, int * pipe, int * background, int * outIndex, int * inIndex){
+	int i = 0; 
+	for (i = 0; i < instr->numTokens; i++)
+	{
+		if ((instr->tokens)[i] != NULL)
+		{
+			if( strcmp(instr->tokens[i], "<") == 0){
+				*inDirect = 1;
+				*inIndex = i;
+			}
+			if (strcmp(instr->tokens[i], ">") == 0){
+				*outDirect = 1;
+				*outIndex = i;
+			}
+			else if (strcmp(instr->tokens[i], "|") == 0)
+				*pipe = 1;
+			if (strcmp(instr->tokens[i], "&") == 0)
+				*background = 1;
+		}
+	}
+}
+
 // read through tokens
 void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, int size, int* current) {
 	if (!(strcmp(instr_ptr->tokens[0], "echo")) && instr_ptr->tokens[1][0] == '$'){          // if statement for all eachos
@@ -190,30 +244,11 @@ void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, i
 	}
 
 
-	int i;
-	for (i = 0; i < instr_ptr->numTokens; i++)
-	{
-		if ((instr_ptr->tokens)[i] != NULL)
-		{
-			if (strstr(instr_ptr->tokens[i],"/") != NULL || strstr(instr_ptr->tokens[i],".") != NULL || strstr(instr_ptr->tokens[i],"~") != NULL)
-			{
-				char * temp = (char*)malloc(500 * sizeof(char));
-				temp = parse_path(instr_ptr->tokens[i], PWD);
+	check_instruction_paths(instr_ptr, PWD);
 
-				if (strlen(temp) > strlen(instr_ptr->tokens[i])){
-					instr_ptr->tokens[i] = resizeTeacher(instr_ptr->tokens[i], temp);
-					strcpy(instr_ptr->tokens[i], temp);
-				}
-				else
-					strcpy(instr_ptr->tokens[i], temp);
-
-			}
-		}
-	}
-
-	i = 0;
-	while(instr_ptr->tokens[i] != NULL ) {
-		if(strcmp(instr_ptr->tokens[i], "") == 0) {
+	int i = 0;
+	while(instr_ptr->tokens[i] != NULL ) {			// cheak any tokens are empty strings 
+		if(strcmp(instr_ptr->tokens[i], "") == 0) {	// if so their was an invalid path
 			printf("Invalid statemnt\n");
 			return;
 		}
@@ -222,33 +257,15 @@ void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, i
 
 	int in_redirect = 0, out_redirect = 0, pipe = 0, background = 0, out_index = 0, in_index = 0;
 
-	for (i = 0; i < instr_ptr->numTokens; i++)
-	{
-		if ((instr_ptr->tokens)[i] != NULL)
-		{
-			if( strcmp(instr_ptr->tokens[i], "<") == 0){
-				in_redirect = 1;
-				in_index = i;
-			}
-			if (strcmp(instr_ptr->tokens[i], ">") == 0){
-				out_redirect = 1;
-				out_index = i;
-			}
-			else if (strcmp(instr_ptr->tokens[i], "|") == 0)
-				pipe = 1;
-			if (strcmp(instr_ptr->tokens[i], "&") == 0)
-				background = 1;
-		}
+	check_instruction_type(instr_ptr, &in_redirect, &out_redirect, &pipe, &background, &out_index, &in_index);
+	
 
-	}
-
+	
 	if (in_redirect == 1 && out_redirect == 1){
 		if( redirect_check(instr_ptr->tokens, in_index) == 1 && redirect_check(instr_ptr->tokens, out_index) == 1)
-			input_redirect(instr_ptr->tokens, in_index);
+			in_out_redirect(instr_ptr->tokens, in_index, out_index);
 		else 
 			printf("Command not found\n");
-
-		in_out_redirect(instr_ptr->tokens, in_index, out_index);
 	}
 	else if (in_redirect == 1){
 		if( redirect_check(instr_ptr->tokens, in_index) == 1)
@@ -256,7 +273,7 @@ void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, i
 		else 
 			printf("Command not found\n");
 	}
-	else if(out_redirect == 1){
+	else if(out_redirect == 1) {
 		if( redirect_check(instr_ptr->tokens, out_index) == 1)
 			output_redirect(instr_ptr->tokens, out_index);
 		else
@@ -297,12 +314,6 @@ void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, i
 	else
 		my_execute(instr_ptr->tokens);
 
-	in_redirect = 0;
-	out_redirect = 0;
-	pipe = 0;
-	background = 0;
-	out_index = 0;
-	in_index = 0;
 }
 
 // gets absolute path returned at string
@@ -339,11 +350,9 @@ char* parse_path(char* path, const char* PWD){
 		strcpy(ret, PWD);
       	        strcat(ret, "/");
 	}
-	else{
-		//strcpy(ret, PWD);
-		strcpy(ret, getenv("PWD"));
-		strcat(ret, "/");
-//		strcat(ret, array[1]);		// add slash and path name
+	else {
+		strcpy(ret, PWD); //getenv("PWD"));
+		strcat(ret, "/");		// add slash and path name
 	}
 
 	// for all token after the first
@@ -542,7 +551,7 @@ void output_redirect(char** cmd, int index){
 		strcpy(temp, cmd[i]);
 		addToken(&Myinstr, temp);
 	}
-	addNull(&Myinstr);
+	addNull(&Myinstr);		// make null terminated
 
 	pid_t pid = fork();		// begin fork
 	if (pid == -1){
@@ -580,7 +589,7 @@ void input_redirect(char** cmd, int index){
 		strcpy(temp, cmd[i]);
 		addToken(&Myinstr, temp);
 	}
-	addNull(&Myinstr);
+	addNull(&Myinstr);		// amke null terminated
 
 	pid_t pid = fork();		// begin fork
 	if (pid == -1){
@@ -611,7 +620,7 @@ void in_out_redirect(char** cmd, int in, int out){
 	char* Output_file = cmd[out + 1];	// output file
 	int Output_fd = open(Output_file, O_RDWR|O_CREAT|O_TRUNC);
 	int status, i = 0;
-
+	printf("Inside in_out\n");
 	if(in < out)
 		out = in;
 
@@ -624,12 +633,10 @@ void in_out_redirect(char** cmd, int in, int out){
 		strcpy(temp, cmd[i]);
 		addToken(&Myinstr, temp);
 	}
-
-	addNull(&Myinstr);
+	addNull(&Myinstr);		// make null terminated
 
 
 	pid_t pid = fork();		// begin fork
-	printf("pid %d\n", pid);
 	if (pid == -1){
 		printf("Error opening file\n");
 	}
@@ -641,7 +648,7 @@ void in_out_redirect(char** cmd, int in, int out){
 		close(1);		// output
 		dup(Output_fd);
 		close(Output_fd);
-		printf("In here\n");
+		
 		char * path = commandPath(cmd[0]);
 
 		execv(path, Myinstr.tokens);
@@ -661,7 +668,7 @@ int redirect_check(char** cmd, int index){
 		if(strcmp(cmd[index], ">") && cmd[index +1] != NULL && path_check(cmd[index +1]) == 1){
 			return 1;
 		}
-		else if (strcmp(cmd[index], "<") && cmd[index + 1] != NULL){
+		else if (strcmp(cmd[index], "<") && cmd[index + 1] != NULL ) {
 			return 1;
 		} 
 	}
@@ -818,7 +825,7 @@ void processEnd(char** backProc, pid_t** id, int size, int current)
 {
 	int status;
 	int i;
-	printf("%d\n",current);
+//	printf("%d\n",current);
 	for (i = 0; i < current; i++)
 	{
 		if (waitpid((*id)[i], &status, WNOHANG) == (*id)[i])				//done running

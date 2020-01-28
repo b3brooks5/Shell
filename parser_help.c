@@ -40,14 +40,14 @@ void my_execute(char** cmd);			//executes commands
 char* resizeTeacher(char* his, char* ours);	// resizes origional null terminated array of strings
 
 // redirection
-void output_redirect(char** cmd, int index);
-void input_redirect(char**cmd, int index);
+int output_redirect(char** cmd, int index, int bg);
+int input_redirect(char**cmd, int index, int bg);
 void in_out_redirect(char** cmd, int in, int out);
 void check_instruction_paths(instruction* instr, const char* PWD);
 int redirect_check(char** cmd, int index);
 void execute_found_instruction(instruction* instr, int * inDirect, int * outDirect, int * pipe, int * background, int * outIndex, int * inIndex, char** PWD);
 // Piping
-void piping(char** cmd, int index);
+void piping(char** cmd, int index, int bg, pid_t** id, int current);
 int pipe_check(char** cmd, int index);
 
 // backgound processing
@@ -128,10 +128,14 @@ int main() {
 		instrCount++;
 		addNull(&instr);
 		interpret(&instr, PWD, process, id, size, &current,instrCount);
-
+//		if (processEnd(process, id, size, &current))
+  //                      continue;
 //		processEnd(process, id, size, current);
 //		printTokens(&instr);
 		clearInstruction(&instr);
+	
+//		if (processEnd(process, id, size, &current))
+  //                      continue;
 	}
 
 	return 0;
@@ -287,19 +291,19 @@ void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, i
 	}
 	else if (in_redirect == 1){
 		if( redirect_check(instr_ptr->tokens, in_index) == 1)
-			input_redirect(instr_ptr->tokens, in_index);
+			input_redirect(instr_ptr->tokens, in_index, 0);
 		else
 			printf("Command not found\n");
 	}
 	else if(out_redirect == 1) {
 		if( redirect_check(instr_ptr->tokens, out_index) == 1)
-			output_redirect(instr_ptr->tokens, out_index);
+			output_redirect(instr_ptr->tokens, out_index, 0);
 		else
 			printf("Command not found\n");
 	}
 	else if (pipe == 1){
 		if(pipe_check(instr_ptr->tokens, in_index) == 1)
-			piping(instr_ptr->tokens, in_index);
+			piping(instr_ptr->tokens, in_index, 0, id, *current);
 		else
 			printf("Command not found\n");
 	}
@@ -351,7 +355,7 @@ void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, i
 	{
 		int i;
 		for (i = 0; i < *current; i++)
-			printf("[%d]+ [%d] [%s]\n",i+1,(*id)[i],backProc[i]);					
+			printf("[%d]+ [%d] [%s]\n",i+1,*id[i],backProc[i]);					
 	}
 	else
 		my_execute(instr_ptr->tokens);
@@ -588,7 +592,7 @@ void my_execute(char** cmd)
 	}
 }
 
-void output_redirect(char** cmd, int index){
+int output_redirect(char** cmd, int index, int bg){
 	char* file = cmd[index + 1]; // grab the name of the file
 	int fd = open(file, O_RDWR|O_CREAT|O_TRUNC);
 	int status, i = 0;
@@ -619,15 +623,20 @@ void output_redirect(char** cmd, int index){
 
 		printf("Problem executing\n");
 	}
+	else if (bg == 1)		//background processing
+	{
+		waitpid(pid, &status, WNOHANG);
+                close(fd);
+	}
 	else {				// parent
 		waitpid(pid, &status, 0);
 		close(fd);
 	}
 	clearInstruction(&Myinstr);
-
+	return pid;
 }
 
-void input_redirect(char** cmd, int index){
+int input_redirect(char** cmd, int index, int bg){
 	char* file = cmd[index + 1]; // grab the name of the file
 	int fd = open(file, O_RDONLY);
 	int status, i = 0;
@@ -658,12 +667,17 @@ void input_redirect(char** cmd, int index){
 
 		printf("Problem executing\n");
 	}
+	else if (bg == 1)		//if background
+	{
+		waitpid(pid, &status, WNOHANG);
+                close(fd);	
+	}
 	else {				// parent
 		waitpid(pid, &status, 0);
 		close(fd);
 	}
 	clearInstruction(&Myinstr);
-
+	return pid;
 }
 
 void in_out_redirect(char** cmd, int in, int out){
@@ -738,7 +752,7 @@ int pipe_check(char** cmd, int index){
 	return 0;
 }
 
-void piping(char** cmd, int index){
+void piping(char** cmd, int index, int bg, pid_t** id, int current){
 	instruction command1;		// create our own null terminated list
 	command1.tokens = NULL;
 	command1.numTokens = 0;
@@ -771,7 +785,11 @@ void piping(char** cmd, int index){
 
 	pid_t pid = fork();
 	int fd[2] = { FDcmd1, FDcmd2 };
-
+	if (pid != 0)  					        //so message is only printed once
+        {
+                *id[current] = pid;                             //add pid to pid array
+                printf("[%d] [%d]\n",current+1, *id[current]);  //prints message
+        }
 	if (pid == 0) {		// child
 		pipe(fd);
 		if(fork() == 0){	// grand child
@@ -793,6 +811,8 @@ void piping(char** cmd, int index){
 			execv(path, command2.tokens);
 		}
 	}
+	else if (bg == 1)		//background
+		waitpid(-1, &status, WNOHANG);		
 	else {
 		waitpid(pid, &status, 0);
 		waitpid(pid, &status, 0);
@@ -848,7 +868,7 @@ void is_background(instruction* instr_ptr, char** backProc, pid_t** id, int size
 					p_index = i;			
 					pipe = 1;
 				}
-				else if (strcmp(instr_ptr->tokens[i], "<") == 0)// || strcmp(instr_ptr->tokens[i], ">") == 0)
+				else if (strcmp(instr_ptr->tokens[i], "<") == 0)
 				{	
 					in_index = i;
 					in_redirect = 1;			
@@ -864,37 +884,57 @@ void is_background(instruction* instr_ptr, char** backProc, pid_t** id, int size
 		}
 		if (count > 1)
 			printf("Error: Invalid Syntax\n");
-		else if (pipe == 1)
-		{	
-			if(pipe_check(instr_ptr->tokens, p_index) == 1)
-                	        piping(instr_ptr->tokens, p_index);
-                	else
-                        	printf("Command not found\n");			
-		}
-		else if (in_redirect == 1 && out_redirect == 1)
-		{ }
-		else if (in_redirect == 1)
-		{
-			if( redirect_check(instr_ptr->tokens, in_index) == 1)
-                        	input_redirect(instr_ptr->tokens, in_index);
-                        else
-                        	printf("Command not found\n");
-		}
-		else if (out_redirect == 1)
-		{ }
-		else		//CMD &
+		else if (count <= 1)
 		{
 			char * line = commandLine(instr_ptr);
-			if(*current == size - 1)		//make more space if no more room
+                        if(*current == size - 1)                //make more space if no more room
+                        {
+                                backProc = resizeArray(backProc, &size);
+                                id = resizeId(id, &size);
+                        }
+                        backProc[*current] = line; //stores the command line
+                        char ** command = makeCopy(instr_ptr);
+			if (pipe == 1)
 			{
-                	 	backProc = resizeArray(backProc, &size);
-                		id = resizeId(id, &size);
+			//	if(pipe_check(instr_ptr->tokens, p_index) == 1)
+                	  //      	piping(instr_ptr->tokens, p_index, 1, id, *current);
+                	//	else
+                        //		printf("Command not found\n");
+			//	*current = *current + 1;                //first process starts at 1		
 			}
-			backProc[*current] = line;      //stores the command line
-			char ** command = makeCopy(instr_ptr);
-			processBegin(command,backProc,id,size,*current);
-			*current = *current + 1;          //first process starts at 1
+			else if (in_redirect == 1 && out_redirect == 1)
+			{ 
 
+
+
+			}
+			else if (in_redirect == 1)
+			{
+				if( redirect_check(command, in_index) == 1)				
+				{
+					*id[*current] = input_redirect(command, in_index, 1);
+		                	printf("[%d] [%d]\n",*current+1, *id[*current]);    //prints message 	
+					*current = *current + 1;                         	
+				}
+				else
+                        		printf("Command not found\n");
+			}
+			else if (out_redirect == 1)
+			{ 
+				if( redirect_check(command, out_index) == 1)
+                                {
+                                        *id[*current] = output_redirect(command, in_index, 1);
+                                 	printf("[%d] [%d]\n",*current+1, *id[*current]);    //prints message       
+					*current = *current + 1;
+                                }
+                                else
+                                        printf("Command not found\n");
+			}
+			else		//CMD &
+			{
+				processBegin(command,backProc,id,size,*current);
+				*current = *current + 1;          	//first process starts at 1
+			}
 		}
 	}
 	else
@@ -907,10 +947,11 @@ char* commandLine(instruction* instr_ptr)		//returns all the tokens for that lin
  	int i;
 	for (i = 0; i < instr_ptr->numTokens; i++)
 	{
-		if ((instr_ptr->tokens)[i] != NULL && strcmp(instr_ptr->tokens[i],"&") != 0)
+		if ((instr_ptr->tokens)[i] != NULL)
 		{
-			strcat(line,(instr_ptr->tokens)[i]);
-			strcat(line, " " );
+			strcat(line,instr_ptr->tokens[i]);
+			if (i != instr_ptr->numTokens - 2)
+				strcat(line, " " );
 		}
 	}
 	return line;
@@ -922,11 +963,9 @@ void processBegin(char** cmd, char** backProc, pid_t** id, int size, int current
 	char* path = commandPath(cmd[0]);
         int status;
         pid_t pid = fork();
-	if (pid != 0)		//so message is only printed once
-	{
-        	*id[current] = pid;				//add pid to pid array
+	*id[current] = pid;					  //add pid to pid array
+	if (pid != 0)
 		printf("[%d] [%d]\n",current+1, *id[current]);    //prints message
-	}
 	if (pid == -1)          //error
         {
                 printf("Error");
@@ -934,23 +973,14 @@ void processBegin(char** cmd, char** backProc, pid_t** id, int size, int current
         }
         else if (pid == 0)      //child
         {
-		printf("in execute\n");
 	        execv(path, cmd);
         	printf("Problem executing %s\n", cmd[0]);
    	    	exit(1);
         }
 	else
 	{
-		printf("waiting\n");
 		waitpid(-1, &status, WNOHANG);
 	}
-//	else if (pid > 0)
-//	{
-//		printf("in else\n");
-	//	wait(NULL);
-//		waitpid(pid, &status, WNOHANG);
-
-//	}
 }
 
 char** makeCopy(instruction* instr_ptr)        //makes copy without the &
@@ -976,7 +1006,7 @@ void deleteProcess(char** backProc, pid_t ** id, char* procToRem, int size, int*
 	int i;
 	for (i = 0; i < *current; i++)
 	{
-		if (strcmp(backProc[i],procToRem) == 0)	//found the process to remove
+		if (strcmp(backProc[i],procToRem) == 0 && strcmp(backProc[i],"NULL") != 0)//found the process to remove
 		{
 			backProc[i] = backProc[i+1];	//remove command and id from both arrays
 			id[i] = id[i+1];
@@ -990,15 +1020,18 @@ int processEnd(char** backProc, pid_t** id, int size, int* current)
 {
 	int status;
 	int i;
+	int retVal = 0;
 	for (i = 0; i < *current; i++)
 	{
-		printf("in for\n");
-		if (waitpid((*id)[i], &status, WNOHANG) != 0) //== (*id)[i])				//done running
+		if (backProc[i] != NULL) 
 		{
-			printf("[%d]+ [%s]\n",i+1, backProc[i]);	//execution complete message
-			deleteProcess(backProc,id,backProc[i],size,current);
-			return 1;
+			if(waitpid((*id)[i], &status, WNOHANG) != 0) 		//done running
+			{
+				printf("[%d]+ [%s]\n",i+1, backProc[i]);	//execution complete message
+				deleteProcess(backProc,id,backProc[i],size,current);
+				retVal = 1;
+			}
 		}
 	}
-	return 0;
+	return  retVal;
 }

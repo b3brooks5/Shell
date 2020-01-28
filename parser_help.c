@@ -342,10 +342,16 @@ void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, i
 	else if (strcmp(instr_ptr->tokens[0], "exit") == 0)
 	{
 		int status;
-		waitpid(-1, &status, 0);
+		waitpid(-1, &status, 0);				//waits for all processes to finish
 		printf("Exiting now!\n");
 		printf("\tCommands executed: %d\n", count);
 		exit(1);
+	}
+	else if (strcmp(instr_ptr->tokens[0], "jobs") == 0)
+	{
+		int i;
+		for (i = 0; i < *current; i++)
+			printf("[%d]+ [%d] [%s]\n",i+1,(*id)[i],backProc[i]);					
 	}
 	else
 		my_execute(instr_ptr->tokens);

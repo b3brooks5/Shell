@@ -52,9 +52,9 @@ void pipeing();
 // backgound processing
 void is_background(instruction* instr_ptr, char** backProc, pid_t** id, int size, int* current);//determine if background or foreground process
 void addProcess(char** backProc, pid_t ** id, int size, int current);
-int deleteProcess(char** backProc, pid_t ** id, char* procToRem, int size, int current);
+void deleteProcess(char** backProc, pid_t ** id, char* procToRem, int size, int* current);
 void processBegin(char** cmd,char** backProc, pid_t ** id, int size, int current);
-void processEnd(char** backProc, pid_t ** id, int size, int current);
+int processEnd(char** backProc, pid_t ** id, int size, int* current);
 char* commandLine(instruction* instr_ptr);	//returns command line as one string
 char** makeCopy(instruction* instr_ptr);	//makes copy without the &
 pid_t** idArray(int size);	                //creates id array
@@ -81,20 +81,18 @@ int main() {
 	while (1) {
 		char * PWD = getenv("PWD");
 		// printf("Please enter an instruction: ");
+		if (processEnd(process, id, size, &current))
+			continue;
 		printf("%s%s%s%s%s%s", user, "@", machine, ":", PWD, "> ");
-		// loop reads character sequences separated by whitespace
-//		if(getchar() == '\n')	// if enter just run again
-//			continue; 
-
+		// loop reads character sequences separated by whitespace		
 		do {
 			//scans for next token and allocates token var to size of scanned token
 			scanf("%ms", &token);
 			temp = (char*)malloc((strlen(token) + 1) * sizeof(char));
-
 			int i;
 			int start = 0;
-			for (i = 0; i < strlen(token); i++) {
-				//pull out special characters and make them into a separate token in the instruction
+			for (i = 0; i < strlen(token); i++) {	
+			//pull out special characters and make them into a separate token in the instruction
 				if (token[i] == '|' || token[i] == '>' || token[i] == '<' || token[i] == '&') {
 					if (i-start > 0) {
 						memcpy(temp, token + start, i - start);
@@ -124,13 +122,14 @@ int main() {
 
 			token = NULL;
 			temp = NULL;
-
 		} while ('\n' != getchar());    //until end of line is reached
-
+//		if (processEnd(process, id, size, &current))
+//                       continue;
+//		processEnd(process, id, size, current);
 		addNull(&instr);
-		interpret(&instr, PWD, process, id, size, &current);
-		
-		processEnd(process, id, size, current);
+		interpret(&instr, PWD, process, id, size, &current);	
+		//processEnd(process, id, size, &current);
+	//	processEnd(process, id, size, current);
 //		printTokens(&instr);
 		clearInstruction(&instr);
 	}
@@ -206,6 +205,7 @@ void check_instruction_paths(instruction* instr, const char* PWD){
 					strcpy(instr->tokens[i], temp);
 				}
 				else
+
 					strcpy(instr->tokens[i], temp);
 			}
 		}
@@ -260,8 +260,10 @@ void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, i
 	check_instruction_type(instr_ptr, &in_redirect, &out_redirect, &pipe, &background, &out_index, &in_index);
 	
 
-	
-	if (in_redirect == 1 && out_redirect == 1){
+	if (background == 1){              //there is an & somewhere in line
+                is_background(instr_ptr, backProc, id, size, current);
+        }	
+	else if (in_redirect == 1 && out_redirect == 1){
 		if( redirect_check(instr_ptr->tokens, in_index) == 1 && redirect_check(instr_ptr->tokens, out_index) == 1)
 			in_out_redirect(instr_ptr->tokens, in_index, out_index);
 		else 
@@ -280,9 +282,6 @@ void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, i
 			printf("Command not found\n");
 	}
 	else if (pipe == 1){
-	}
-	else if (background == 1){		//there is an & somewhere in line
-		is_background(instr_ptr, backProc, id, size, current);
 	}
 
 	else if (strcmp(instr_ptr->tokens[0], "cd") == 0)
@@ -313,7 +312,6 @@ void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, i
 	}
 	else
 		my_execute(instr_ptr->tokens);
-
 }
 
 // gets absolute path returned at string
@@ -527,7 +525,6 @@ void my_execute(char** cmd)
 	else if (pid == 0)	//child
 	{
 		execv(path, cmd);
-	//	fprintf("Problem executing %s\n", cmd[0]);	//not sure why it doesn't like this line
 		printf("Problem executing %s\n", cmd[0]);
 		exit(1);
 	}
@@ -687,13 +684,23 @@ void is_background(instruction* instr_ptr, char** backProc, pid_t** id, int size
 {
 	if (strcmp(instr_ptr->tokens[0],"&") == 0)					//if & CMD
 	{
-		if (strcmp(instr_ptr->tokens[instr_ptr->numTokens - 2],"&") == 0)	//& CMD &
+		if (strcmp(instr_ptr->tokens[instr_ptr->numTokens - 2],"&") == 0)	//& CMD &, behave same as CMD &
 		{
-			printf("& CMD &\n");
+			char * line = commandLine(instr_ptr);
+                        if(*current == size - 1)                //make more space if no more room
+                        {
+                                backProc = resizeArray(backProc, &size);
+                                id = resizeId(id, &size);
+                        }
+                        backProc[*current] = line;      	//stores the command line
+                        char ** command = makeCopy(instr_ptr);
+                        processBegin(command,backProc,id,size,*current);
+                        *current = *current + 1;          	//first process starts at 1			
 		}
-		else
+		else						//executes in foreground
 		{
-			printf("& CMD\n");
+			char ** command = makeCopy(instr_ptr);
+			my_execute(command);						
 		}
 	}
 	else if (strcmp(instr_ptr->tokens[instr_ptr->numTokens - 2],"&") == 0)		//CMD &
@@ -755,7 +762,7 @@ char* commandLine(instruction* instr_ptr)		//returns all the tokens for that lin
 	{
 		if ((instr_ptr->tokens)[i] != NULL && strcmp(instr_ptr->tokens[i],"&") != 0)
 		{
-			strcat(line,(instr_ptr->tokens)[i]);
+			strcat(line,(instr_ptr->tokens)[i]); 
 			strcat(line, " " );
 		}
 	}
@@ -771,7 +778,7 @@ void processBegin(char** cmd, char** backProc, pid_t** id, int size, int current
 	if (pid != 0)		//so message is only printed once
 	{
         	*id[current] = pid;				//add pid to pid array
-		printf("[%d] [%d]\n",current, *id[current]);    //prints message
+		printf("[%d] [%d]\n",current+1, *id[current]);    //prints message
 	}
 	if (pid == -1)          //error
         {
@@ -780,11 +787,23 @@ void processBegin(char** cmd, char** backProc, pid_t** id, int size, int current
         }
         else if (pid == 0)      //child
         {
+		printf("in execute\n");
 	        execv(path, cmd);
         	printf("Problem executing %s\n", cmd[0]);
-        	exit(1);
+   	    	exit(1);
         }
+	else
+	{
+		printf("waiting\n");
+		waitpid(-1, &status, WNOHANG);
+	}
+//	else if (pid > 0)
+//	{
+//		printf("in else\n");
+	//	wait(NULL);
+//		waitpid(pid, &status, WNOHANG);
 
+//	}
 }
 
 char** makeCopy(instruction* instr_ptr)        //makes copy without the &
@@ -805,33 +824,34 @@ char** makeCopy(instruction* instr_ptr)        //makes copy without the &
 	return instr.tokens;
 }
 
-int deleteProcess(char** backProc, pid_t ** id, char* procToRem, int size, int current)
+void deleteProcess(char** backProc, pid_t ** id, char* procToRem, int size, int* current)
 {
-/*	int i;
+	int i;
 	for (i = 0; i < *current; i++)
 	{
 		if (strcmp(backProc[i],procToRem) == 0)	//found the process to remove
 		{
-			backProc[i] = backProc[i+1];
-
-			*current = *current - 1;
+			backProc[i] = backProc[i+1];	//remove command and id from both arrays
+			id[i] = id[i+1];
+			*current = *current - 1;	//update current
 			break;
 		}
 	}
-	return *current;
-*/}
+}
 
-void processEnd(char** backProc, pid_t** id, int size, int current)
+int processEnd(char** backProc, pid_t** id, int size, int* current)
 {
 	int status;
 	int i;
-//	printf("%d\n",current);
-	for (i = 0; i < current; i++)
+	for (i = 0; i < *current; i++)
 	{
-		if (waitpid((*id)[i], &status, WNOHANG) == (*id)[i])				//done running
+		printf("in for\n");
+		if (waitpid((*id)[i], &status, WNOHANG) != 0) //== (*id)[i])				//done running
 		{
-			printf("[%d]+ [%s]",i, backProc[i]);	//execution complete message
-			//call remove function
+			printf("[%d]+ [%s]\n",i+1, backProc[i]);	//execution complete message
+			deleteProcess(backProc,id,backProc[i],size,current);						
+			return 1;
 		}
 	}
+	return 0;
 }

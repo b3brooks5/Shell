@@ -28,6 +28,7 @@ void clearInstruction(instruction* instr_ptr);
 void addNull(instruction* instr_ptr);
 
 void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, int size, int* current);
+char* echo(instruction* cmd );
 
 char** resizeArray(char**, int*);	// returns an array with double the size as was previously passed, doubles passed int
 char** createArray(int);		// initiates a new 2d dynamically allocated array
@@ -252,10 +253,9 @@ int check_instruction_type(instruction* instr, int * inDirect, int * outDirect, 
 
 // read through tokens
 void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, int size, int* current) {
-	if (!(strcmp(instr_ptr->tokens[0], "echo")) && instr_ptr->tokens[1][0] == '$'){          // if statement for all eachos
-		char * dest = (char*)malloc(50 * sizeof(char));
-		strcpy(dest, &(instr_ptr->tokens[1][1]));
-		printf("%s\n", getenv(dest));
+	if(strcmp(instr_ptr->tokens[0], "echo") == 0) {		// get custom environment variabe string
+		printf("%s\n", echo(instr_ptr));
+		return;
 	}
 
 	check_instruction_paths(instr_ptr, PWD);
@@ -524,6 +524,32 @@ pid_t** resizeId(pid_t** array, int* sizeofarray) //returns an array with double
         free(array);
 
         return new;
+}
+
+char* echo(instruction* cmd){
+	int i = 1;
+	char* ret = (char*)malloc(500 * sizeof(char));
+	if(strcmp(cmd->tokens[0], "echo") == 0){
+		while(cmd->tokens[i] != NULL){
+			if(cmd->tokens[i][0] == '$'){	// if var is environment
+				char* env = getenv(&(cmd->tokens[i][1]));
+				if(env != NULL){	// if env var found
+					strcat(ret, env);
+					strcat(ret, " ");
+				}
+				else {			// else add string
+					strcat(ret, cmd->tokens[i]);
+					strcat(ret, " ");
+				}
+			}
+			else {				// if noe env just add is
+				strcat(ret, cmd->tokens[i]);	
+				strcat(ret, " ");
+			}
+		i++;
+		}
+	}
+	return ret;	// return entire string
 }
 
 char* commandPath(char* cmd)

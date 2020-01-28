@@ -27,8 +27,12 @@ void printTokens(instruction* instr_ptr);
 void clearInstruction(instruction* instr_ptr);
 void addNull(instruction* instr_ptr);
 
-void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, int size, int* current);
+
+
 char* echo(instruction* cmd );
+
+void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, int size, int* current, int count);
+
 
 char** resizeArray(char**, int*);	// returns an array with double the size as was previously passed, doubles passed int
 char** createArray(int);		// initiates a new 2d dynamically allocated array
@@ -128,7 +132,7 @@ int main() {
 
 		instrCount++;
 		addNull(&instr);
-		interpret(&instr, PWD, process, id, size, &current);
+		interpret(&instr, PWD, process, id, size, &current,instrCount);
 
 //		processEnd(process, id, size, current);
 //		printTokens(&instr);
@@ -338,6 +342,20 @@ void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, i
 			else
 				setenv("PWD",instr_ptr->tokens[1],1);
 		}
+	}
+	else if (strcmp(instr_ptr->tokens[0], "exit") == 0)
+	{
+		int status;
+		waitpid(-1, &status, 0);				//waits for all processes to finish
+		printf("Exiting now!\n");
+		printf("\tCommands executed: %d\n", count);
+		exit(1);
+	}
+	else if (strcmp(instr_ptr->tokens[0], "jobs") == 0)
+	{
+		int i;
+		for (i = 0; i < *current; i++)
+			printf("[%d]+ [%d] [%s]\n",i+1,(*id)[i],backProc[i]);					
 	}
 	else
 		my_execute(instr_ptr->tokens);
@@ -849,17 +867,27 @@ void is_background(instruction* instr_ptr, char** backProc, pid_t** id, int size
 	{										//need to execute in background
 		int i;
 		int count = 0;		//keep track of number of &'s for error checking
-		int input_redirect = 0, output_redirect = 0, pipe = 0;
+		int in_redirect = 0, out_redirect = 0, pipe = 0;
+		int in_index = 0, out_index = 0, p_index;
 		for (i = 0; i < instr_ptr->numTokens; i++)
         	{
                 	if ((instr_ptr->tokens)[i] != NULL)
                		{
 				if (strcmp(instr_ptr->tokens[i], "|") == 0)		//there is a pipe
+				{
+					p_index = i;			
 					pipe = 1;
-				else if (strcmp(instr_ptr->tokens[i], "<") == 0 || strcmp(instr_ptr->tokens[i], ">") == 0)
-					input_redirect = 1;
+				}
+				else if (strcmp(instr_ptr->tokens[i], "<") == 0)// || strcmp(instr_ptr->tokens[i], ">") == 0)
+				{	
+					in_index = i;
+					in_redirect = 1;			
+				}
 				else if (strcmp(instr_ptr->tokens[i], ">") == 0)
-					output_redirect = 1;
+				{
+					out_index = i;
+					out_redirect = 1;
+				}
 				else if (strcmp(instr_ptr->tokens[i], "&") == 0)
 					count++;
 			}
@@ -867,15 +895,22 @@ void is_background(instruction* instr_ptr, char** backProc, pid_t** id, int size
 		if (count > 1)
 			printf("Error: Invalid Syntax\n");
 		else if (pipe == 1)
-		{
-			//call piping
-
+		{	
+			if(pipe_check(instr_ptr->tokens, p_index) == 1)
+                	        piping(instr_ptr->tokens, p_index);
+                	else
+                        	printf("Command not found\n");			
 		}
-		else if (input_redirect == 1 && output_redirect == 1)
+		else if (in_redirect == 1 && out_redirect == 1)
 		{ }
-		else if (input_redirect == 1)
-		{ }
-		else if (output_redirect == 1)
+		else if (in_redirect == 1)
+		{
+			if( redirect_check(instr_ptr->tokens, in_index) == 1)
+                        	input_redirect(instr_ptr->tokens, in_index);
+                        else
+                        	printf("Command not found\n");
+		}
+		else if (out_redirect == 1)
 		{ }
 		else		//CMD &
 		{

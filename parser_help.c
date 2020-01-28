@@ -256,7 +256,7 @@ int check_instruction_type(instruction* instr, int * inDirect, int * outDirect, 
 
 
 // read through tokens
-void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, int size, int* current) {
+void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, int size, int* current, int count) {
 	if(strcmp(instr_ptr->tokens[0], "echo") == 0) {		// get custom environment variabe string
 		printf("%s\n", echo(instr_ptr));
 		return;

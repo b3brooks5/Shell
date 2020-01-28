@@ -834,7 +834,7 @@ int pipe_check(char** cmd, int index, int index2){
 	return 0;
 }
 
-void piping(char** cmd, int index, int bg, pid_t** id, int current){
+void piping(char** cmd, int index) {
 	instruction command1;		// create our own null terminated list
 	command1.tokens = NULL;
 	command1.numTokens = 0;
@@ -867,11 +867,6 @@ void piping(char** cmd, int index, int bg, pid_t** id, int current){
 
 	pid_t pid = fork();
 	int fd[2] = { FDcmd1, FDcmd2 };
-	if (pid != 0)  					        //so message is only printed once
-        {
-                *id[current] = pid;                             //add pid to pid array
-                printf("[%d] [%d]\n",current+1, *id[current]);  //prints message
-        }
 	if (pid == 0) {		// child
 		pipe(fd);
 		if(fork() == 0){	// grand child
@@ -893,8 +888,6 @@ void piping(char** cmd, int index, int bg, pid_t** id, int current){
 			execv(path, command2.tokens);
 		}
 	}
-	else if (bg == 1)		//background
-		waitpid(-1, &status, WNOHANG);
 	else {
 		waitpid(pid, &status, 0);
 		waitpid(pid, &status, 0);

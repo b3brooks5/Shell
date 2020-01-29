@@ -55,7 +55,7 @@ int double_pipe(char** cmd, int index1, int index2, int bg);	// for two pipes, d
 
 // backgound processing
 void is_background(instruction* instr_ptr, char** backProc,
-    pid_t** id, int size, int* current);//determine if background or foreground process
+    pid_t** id, int size, int* current);	//determine if background or foreground process
 void addProcess(char** backProc, pid_t ** id, int size, int current);
 void deleteProcess(char** backProc, pid_t ** id, char* procToRem, int size, int* current);
 void processBegin(char** cmd,char** backProc, pid_t ** id, int size, int current);
@@ -70,6 +70,7 @@ char* resizeTeacher(char* his, char* ours);	// resize original null terminated a
 char** resizeArray(char**, int*);	// returns an array with double the size, doubles passed int
 char** createArray(int);		// initiates a new 2d dynamically allocated array
 void deallocateArray(char**, int); 	// destructs a dynamically allocated array
+
 int main() {
 	char* token = NULL;
 	char* temp = NULL;
@@ -134,16 +135,13 @@ int main() {
 		} while ('\n' != getchar());    //until end of line is reached
 
 		if(instr.numTokens == 1 && strcmp(instr.tokens[0], "cd") == 0)
-			addToken(&instr, "~");	// just cd ass ~ to do the work for us
+			addToken(&instr, "~");	// just cd as ~ to do the work for us
 
 		instrCount++;
 		addNull(&instr);
 		interpret(&instr, PWD, process, id, size, &current,instrCount);
-
-//		processEnd(process, id, size, current);
 //		printTokens(&instr);
 		clearInstruction(&instr);
-
 	}
 
 	return 0;
@@ -505,8 +503,6 @@ void double_period(char* ret){
 		}
 	}
 }
-
-
 
             /* execution */
 void my_execute(char** cmd)

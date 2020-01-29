@@ -18,6 +18,7 @@ Built-ins:             Both
 
 Contents: README 
           project1.c - main program
+	  gitcommitlog.txt - lists the commits made to the repository
           makefile - created executable
 
 -- Type make and it will create an executable called shell.

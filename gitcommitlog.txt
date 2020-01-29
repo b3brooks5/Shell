@@ -1,0 +1,489 @@
+commit eac36e6d6c318927d18f898c900ba56fa78dbb1e
+Author: Myra Mullis <51244137+mmullis7@users.noreply.github.com>
+Date:   Tue Jan 28 21:45:25 2020 -0500
+
+    Updated spacing and comments
+
+ project1.c | 12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
+
+commit 373f7d69635b96de8847e93705eabbac718baa35
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Tue Jan 28 21:37:35 2020 -0500
+
+    Makefile
+
+ Makefile | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+commit f9ea5d2bfd2d61bd03cb47cf2d7d1fb097decf0c
+Merge: 6eb1464 8557d72
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Tue Jan 28 21:36:26 2020 -0500
+
+    Merge branch 'master' of https://github.com/b3brooks5/Project1-Shell
+
+commit 6eb1464df91a9aa56b496ef5742021240fab2e66
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Tue Jan 28 21:36:21 2020 -0500
+
+    Restructuring
+    
+    changes order of functions to be easier to follow
+
+ project1.c | 392 +++++++++++++++++++++++++++++++------------------------------
+ 1 file changed, 200 insertions(+), 192 deletions(-)
+
+commit 8557d726c8badced39b48b59571dc11cb07a04fc
+Author: Myra Mullis <51244137+mmullis7@users.noreply.github.com>
+Date:   Tue Jan 28 21:22:56 2020 -0500
+
+    Updated README
+
+ README.txt | 36 ++++++++++++++++++++----------------
+ 1 file changed, 20 insertions(+), 16 deletions(-)
+
+commit 87b81371fab4fcd2282555bf4df53f882e3bde3c
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Tue Jan 28 21:04:10 2020 -0500
+
+    Echo and README
+    
+    corrected echo and added REDME file
+
+ README.txt | 56 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ project1.c |  8 +++++---
+ 2 files changed, 61 insertions(+), 3 deletions(-)
+
+commit ad8d88b2e5337b33e0ab7a1d61f0dc0311539e69
+Author: b3brooks5 <47163529+b3brooks5@users.noreply.github.com>
+Date:   Tue Jan 28 21:02:39 2020 -0500
+
+    Change file name
+
+ parser_help.c => project1.c | 0
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+
+commit 28f14071bf970b9131219f534dda352975e27604
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Tue Jan 28 19:54:59 2020 -0500
+
+    Refactoring
+    
+    Deleting unused code and making lines shorter
+
+ parser_help.c | 173 +++++++++++++++++++---------------------------------------
+ 1 file changed, 56 insertions(+), 117 deletions(-)
+
+commit 47eb617fdbe8bd7b512c25f7661483c3c7c5c5a1
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Tue Jan 28 19:19:56 2020 -0500
+
+    Fixed
+    
+    fixed background piping and output. Also fixed normal piping
+
+ parser_help.c | 32 +++++++++++++++-----------------
+ 1 file changed, 15 insertions(+), 17 deletions(-)
+
+commit f0d03bb947fb979cfb2c3c7d8bad6cb752bdec75
+Author: Myra Mullis <51244137+mmullis7@users.noreply.github.com>
+Date:   Tue Jan 28 16:48:28 2020 -0500
+
+    Background Processing Done
+    
+    -need to further test redirection with background processing
+    -something is happening with the jobs command now
+
+ parser_help.c | 102 ++++++++++++++++++++++++++++++++++++----------------------
+ 1 file changed, 64 insertions(+), 38 deletions(-)
+
+commit e33aea4d2c8f3d69260f7272ad3103ca0a1d72d7
+Author: Myra Mullis <51244137+mmullis7@users.noreply.github.com>
+Date:   Tue Jan 28 15:14:14 2020 -0500
+
+    Updated parsing
+
+ parser_help.c | 9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
+
+commit abc8fa1c2c18f424a1fcbb0ccfc928fbc26e3008
+Merge: 38314f8 ff2db3f
+Author: Myra Mullis <51244137+mmullis7@users.noreply.github.com>
+Date:   Tue Jan 28 15:10:34 2020 -0500
+
+    Merge branch 'master' of https://github.com/b3brooks5/Project1-Shell
+
+commit ff2db3fd977b032544f46296b4d8588abc3b18d3
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Tue Jan 28 15:04:31 2020 -0500
+
+    Pipe cheaking
+    
+    adds more cheaks for pipe and enables cd with no paramaters
+
+ parser_help.c | 298 +++++++++++++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 253 insertions(+), 45 deletions(-)
+
+commit 38314f8fbcf7699ba738acb9f68f8dfe1883a91d
+Author: Myra Mullis <51244137+mmullis7@users.noreply.github.com>
+Date:   Tue Jan 28 15:03:52 2020 -0500
+
+    Background processing
+    
+    -almost done, still need piping
+
+ parser_help.c | 161 +++++++++++++++++++++++++++++++++++-----------------------
+ 1 file changed, 97 insertions(+), 64 deletions(-)
+
+commit 82902037e9a9954af09494f90dd03c7dd0503138
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Mon Jan 27 23:00:31 2020 -0500
+
+    I made an error in merging fixed now
+
+ parser_help.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 817248a06750d0912c385c7bebbd1f1ebb4aec01
+Merge: 9c846f5 c0d8361
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Mon Jan 27 22:55:44 2020 -0500
+
+    Merge branch 'master' of https://github.com/b3brooks5/Project1-Shell
+
+commit 9c846f59af0c1fecef073180996f07ac500401d0
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Mon Jan 27 22:54:07 2020 -0500
+
+    echo
+    
+    echo can now handle custom inputs with environment variables
+
+ parser_help.c | 34 ++++++++++++++++++++++++++++++----
+ 1 file changed, 30 insertions(+), 4 deletions(-)
+
+commit c0d83612a5c91a2fe1dd4798ac9dc4eb5757f277
+Author: Myra Mullis <51244137+mmullis7@users.noreply.github.com>
+Date:   Mon Jan 27 21:47:32 2020 -0500
+
+    Added jobs built_in
+
+ parser_help.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+commit 1203226f1ca859fa4723f6e47c6c7c5de760fac4
+Author: Myra Mullis <51244137+mmullis7@users.noreply.github.com>
+Date:   Mon Jan 27 21:35:25 2020 -0500
+
+    Added exit built-in
+
+ parser_help.c | 53 +++++++++++++++++++++++++++++++++++++++--------------
+ 1 file changed, 39 insertions(+), 14 deletions(-)
+
+commit 56e4e90aa76f4723034a333368628c47db481ddf
+Merge: cf49207 9aba322
+Author: Myra Mullis <51244137+mmullis7@users.noreply.github.com>
+Date:   Mon Jan 27 20:23:47 2020 -0500
+
+    Merge branch 'master' of https://github.com/b3brooks5/Project1-Shell
+
+commit cf49207321b7635ddab786a90ac5628bc8500dfb
+Author: Myra Mullis <51244137+mmullis7@users.noreply.github.com>
+Date:   Mon Jan 27 20:21:12 2020 -0500
+
+    More background processing
+    
+    -Trying to fix issue of calling processEnd() in correct place
+    -It prints the execution complete message after entering another command.
+
+ parser_help.c | 102 +++++++++++++++++++++++++++++++++++-----------------------
+ 1 file changed, 61 insertions(+), 41 deletions(-)
+
+commit 9aba3221c1cc7303137506fde365910713790239
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Mon Jan 27 19:46:17 2020 -0500
+
+    Error cheaking
+    
+    Adds error cheaking for instructions with too many input or output redirections and an error for I/O and piping which we don't have to do. Also now supports absolute paths for cd and cheaks if two many paramaters are gicen to cd
+
+ parser_help.c | 85 ++++++++++++++++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 66 insertions(+), 19 deletions(-)
+
+commit 4a4c34f047464a537639c90463ac41ffda32c21e
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Mon Jan 27 17:48:07 2020 -0500
+
+    Piping
+    
+    In the words of Migos, "pipe it up, pipe it up" because piping is done
+
+ parser_help.c | 78 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 74 insertions(+), 4 deletions(-)
+
+commit 10997e2cfe181152ff2408a103030ae886e8c59c
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Sun Jan 26 21:04:24 2020 -0500
+
+    Refactoring
+    
+    Adds documentation and breaks up large functions into many smaller functions
+
+ parser_help.c | 141 ++++++++++++++++++++++++++++++----------------------------
+ 1 file changed, 74 insertions(+), 67 deletions(-)
+
+commit dfb2e01fe51bd6073e1222cb64d0d8b87b19dc7e
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Sun Jan 26 17:36:45 2020 -0500
+
+    double I/O
+    
+    for about error checking an input with both <  and >. added
+
+ parser_help.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+commit b2be6d4ead5d812346ec78d141e45608cdb93ad9
+Merge: fc9770b bf813cb
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Sun Jan 26 17:25:32 2020 -0500
+
+    Merge branch 'master' of https://github.com/b3brooks5/Project1-Shell
+
+commit fc9770bd860e793b7154fd032257b16e38619fc8
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Sun Jan 26 17:23:19 2020 -0500
+
+    I/O error cheaking
+    
+    I/O should bo completely done now
+
+ parser_help.c | 28 +++++++++++++++++++++++-----
+ 1 file changed, 23 insertions(+), 5 deletions(-)
+
+commit bf813cbc84646bb609bfecacb0e52f7d885ba665
+Merge: 89fd7bc cbcdd5c
+Author: Myra Mullis <51244137+mmullis7@users.noreply.github.com>
+Date:   Sun Jan 26 16:53:45 2020 -0500
+
+    Merge branch 'master' of https://github.com/b3brooks5/Project1-Shell
+
+commit 89fd7bc64b9c9b15cd98fefb7528d14668231ea5
+Author: Myra Mullis <51244137+mmullis7@users.noreply.github.com>
+Date:   Sun Jan 26 16:44:36 2020 -0500
+
+    Background Processing
+    
+    Background processing somewhat works, still in the process of completing
+
+ parser_help.c | 233 ++++++++++++++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 220 insertions(+), 13 deletions(-)
+
+commit cbcdd5ce25d43a4275b9ba4af6defaf03c3134e0
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Sun Jan 26 15:16:49 2020 -0500
+
+    I/O redirect done
+    
+    I/O redirect is done but still needs error cheaking
+
+ parser_help.c | 86 +++++++++++++++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 75 insertions(+), 11 deletions(-)
+
+commit 4aead47e070b73ee9e7e976f83d2f20021f8de3e
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Sat Jan 25 21:12:59 2020 -0500
+
+    Input and output
+    
+    Input and outfut now work independently of oeach other. Still need path error cheaking and concatination.
+
+ parser_help.c | 70 +++++++++++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 51 insertions(+), 19 deletions(-)
+
+commit 18c07f5203c35e4ff43891d37fcd556b31beec77
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Sat Jan 25 16:15:11 2020 -0500
+
+    Path finding bug
+    
+    Found a problem with path finding that has been fixed. Wouldn't catach error of having ~ in the middle of a path. Also changed some variable names and comments for clarity.
+
+ parser_help.c | 159 +++++++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 101 insertions(+), 58 deletions(-)
+
+commit 7d0d34407b6d6af1bed05ee88ad22b133af7dd92
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Sat Jan 25 13:00:08 2020 -0500
+
+    Execute
+    
+    Changes commandPath function so now it can run executables like a.out
+
+ parser_help.c | 23 ++++++++++++++++-------
+ 1 file changed, 16 insertions(+), 7 deletions(-)
+
+commit e167a9fb8ec0afb605da24bc5b64957bde47a242
+Merge: ff6b98a 311313d
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Fri Jan 24 11:00:31 2020 -0500
+
+    Merge branch 'master' of https://github.com/b3brooks5/Project1-Shell
+
+commit ff6b98a254ff1fc1e0ad080b3ab6869c145865e6
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Fri Jan 24 10:58:12 2020 -0500
+
+    Started output redirect
+
+ parser_help.c | 27 ++++++++++++++++++++++++---
+ 1 file changed, 24 insertions(+), 3 deletions(-)
+
+commit 311313d3b87a9c98e3346d3488955e6ccecfc264
+Author: Myra Mullis <51244137+mmullis7@users.noreply.github.com>
+Date:   Fri Jan 24 10:57:10 2020 -0500
+
+    Fixed for loop
+
+ parser_help.c | 32 ++++++++++++++++++--------------
+ 1 file changed, 18 insertions(+), 14 deletions(-)
+
+commit 36032584d254c46cee2b78a91dfd77d29da3118d
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Fri Jan 24 10:30:59 2020 -0500
+
+    Adds logic input output
+    
+    Adds cheaks to see if statememtn has input/output redirection, pipes, or background processes
+
+ parser_help.c | 31 ++++++++++++++++++++++++++++++-
+ 1 file changed, 30 insertions(+), 1 deletion(-)
+
+commit 71a9a6281633b152f8386de6bffa695559c1ab07
+Author: Myra Mullis <51244137+mmullis7@users.noreply.github.com>
+Date:   Thu Jan 23 21:24:22 2020 -0500
+
+    Fixed issues with cd and paths
+
+ parser_help.c | 42 +++++++++---------------------------------
+ 1 file changed, 9 insertions(+), 33 deletions(-)
+
+commit a66d49242fb1de03ca27d50961b707770693c0d5
+Author: Myra Mullis <51244137+mmullis7@users.noreply.github.com>
+Date:   Thu Jan 23 15:10:08 2020 -0500
+
+    Finished echo and fixed cd
+
+ parser_help.c | 73 ++++++++++++++++++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 67 insertions(+), 6 deletions(-)
+
+commit 1b0b7a19db090a3c2441bea76fde67bc7b5723da
+Author: Myra Mullis <51244137+mmullis7@users.noreply.github.com>
+Date:   Thu Jan 23 13:39:43 2020 -0500
+
+    Changed interpret function
+
+ parser_help.c | 45 +++++++++++++++++++++++----------------------
+ 1 file changed, 23 insertions(+), 22 deletions(-)
+
+commit 789a9ca73dd0bcf605a4690a7cf745e79dfede90
+Author: Myra Mullis <51244137+mmullis7@users.noreply.github.com>
+Date:   Thu Jan 23 10:28:18 2020 -0500
+
+    Fixed function parameters
+
+ parser_help.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+commit e859bc8fcf887325fd8a4948c14048f9ae11ec46
+Merge: bf06602 f827a1f
+Author: Myra Mullis <51244137+mmullis7@users.noreply.github.com>
+Date:   Wed Jan 22 21:32:04 2020 -0500
+
+    Fixed conflicts
+
+commit bf066024297cb6699d6467fe988473bef58b2832
+Author: Myra Mullis <51244137+mmullis7@users.noreply.github.com>
+Date:   Wed Jan 22 21:18:35 2020 -0500
+
+    Path resolution and execution
+
+ parser_help.c | 76 ++++++++++++++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 55 insertions(+), 21 deletions(-)
+
+commit f827a1fd003aed673237a7e7638eb387f8e2cb44
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Wed Jan 22 14:54:46 2020 -0500
+
+    Error cheaking
+    
+    Adds function called path_cheak that will return 1 if path is correct and 0 otherwise
+
+ parser_help.c | 39 +++++++++++++++++++++++++++++++++------
+ 1 file changed, 33 insertions(+), 6 deletions(-)
+
+commit 2c668ab968c783543ee862350c5d7828fd67fe72
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Mon Jan 20 15:29:23 2020 -0500
+
+    Finish path finder
+    
+    Parse path will now return the absolute path for the string passed in, PWD is now needed to keep track of our current directory. Now supporst '.' and '..' anywhere in path and ~ for home directory. Does not yet cheak for incorrect paths
+
+ parser_help.c | 113 +++++++++++++++++++++++++++-------------------------------
+ 1 file changed, 52 insertions(+), 61 deletions(-)
+
+commit 47e37a609e9d4305e11cfdc51518d2af5b051ef3
+Merge: 50d2430 a4a7f44
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Mon Jan 20 12:20:12 2020 -0500
+
+    conflicts
+
+commit 50d243090f6f2e2dfc5ebfd66103db8cbe4f0240
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Mon Jan 20 12:07:18 2020 -0500
+
+    get path
+    
+    Add functionality to take a path and expand it to account for special cases like '.' or '..'
+
+ parser_help.c | 131 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 130 insertions(+), 1 deletion(-)
+
+commit a4a7f4487e3c2c061559b5d03e8e2b3fc7974ef0
+Author: Myra Mullis <51244137+mmullis7@users.noreply.github.com>
+Date:   Thu Jan 16 13:16:19 2020 -0500
+
+    Added pwd path and started execution
+
+ parser_help.c | 42 +++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 39 insertions(+), 3 deletions(-)
+
+commit 72819549c56250e67ce8871518f89b39d35e1db5
+Author: B3brooks5 <45647104+B3brooks@users.noreply.github.com>
+Date:   Thu Jan 16 11:28:19 2020 -0500
+
+    Interpret and Prompt
+
+ parser_help.c | 24 ++++++++++++++++++++++--
+ 1 file changed, 22 insertions(+), 2 deletions(-)
+
+commit 5dcb7f303ebb3036fd7450ff747f339a96e5d883
+Author: b3brooks5 <47163529+b3brooks5@users.noreply.github.com>
+Date:   Thu Jan 16 10:49:50 2020 -0500
+
+    Provided code
+
+ parser_help.c | 134 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 134 insertions(+)
+
+commit f46af677ec5fe631edc460206df23ec373adc760
+Author: b3brooks5 <47163529+b3brooks5@users.noreply.github.com>
+Date:   Thu Jan 16 10:48:52 2020 -0500
+
+    Initial commit
+
+ README.md | 1 +
+ 1 file changed, 1 insertion(+)

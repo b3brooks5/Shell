@@ -40,12 +40,12 @@ sure how this is possible, we used O_RDWR|O_CREAT|O_TRUNC flags
 that (as far as we understand) should create a file if it doesn't 
 already exits that is read and writable and truncate to it.
 
-We also ran into a weird bug where specificall output wont work
-on Myras linprog but it will on Bryce's. We traced to problem 
+We also ran into a weird bug where specific call output won't work
+on Myra's linprog but it will on Bryce's. We traced to problem 
 back to the parse_check function which uses the built in stat
 struct so it must be something that we are not catching in 
-out logic or something we don't understnd. The bug also only
-appeas with output redirection. It does't appea whe input 
+out logic or something we don't understand. The bug also only
+appears with output redirection. It does't appear where input 
 and output are done the same line. 
 
 Double piping also doesn't work:
@@ -55,7 +55,7 @@ we believe the problem is with the linking of it and the
 second executable entered.
 
 with Single piping we know it will always work with a build-in 
-and executable but not allways with a combination of two of the 
+and executable but not always with a combination of two of the 
 same of them.
 
 Background:
@@ -68,9 +68,9 @@ while also outputting the results of ls, and the user must now
 type another command to be able to see if the background process
 completed.
 
-also sometimes when printing it will look like the program has
-entered aninfinite loop or someting but if you enter another 
-instruction is will print oput the info for the finished process.
+Also, sometimes when printing it will look like the program has
+entered an infinite loop or something but if you enter another 
+instruction it will print out the info for the finished process.
 
 Extra Credit:
 We completed I/O redirection within the same line both in normal

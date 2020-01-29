@@ -28,14 +28,14 @@ void addNull(instruction* instr_ptr);
 
 char* echo(instruction* cmd );
 
-void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, int size, int* current, int count);
+void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, int size,
+    int* current, int count);	// main function called once every instruction
 
 
-char** resizeArray(char**, int*);	// returns an array with double the size as was previously passed, doubles passed int
+char** resizeArray(char**, int*);	// returns an array with double the size, doubles passed int
 char** createArray(int);		// initiates a new 2d dynamically allocated array
 void deallocateArray(char**, int); 	// destructs a dynamically allocated array
-char* parse_path(char* str, const char* PWD);
-char** make_tokens( int* size, char* path);
+char* parse_path(char* str, const char* PWD);	// gets absolute path of one entered
 void double_period(char* ret);		// help parse double period
 int path_check(const char* path);	// cheaks if path namne valid
 char* commandPath(char* cmd);		//returns command added to correct $PATH location
@@ -46,15 +46,18 @@ char* resizeTeacher(char* his, char* ours);	// resizes origional null terminated
 int output_redirect(char** cmd, int index, int bg);
 int input_redirect(char**cmd, int index, int bg);
 int in_out_redirect(char** cmd, int in, int out, int bg);
-void check_instruction_paths(instruction* instr, const char* PWD);
-int redirect_check(char** cmd, int index);
-void execute_found_instruction(instruction* instr, int * inDirect, int * outDirect, int * pipe, int * background, int * outIndex, int * inIndex, char** PWD);
+void check_instruction_paths(instruction* instr,
+    const char* PWD);	// makes sure instructions are valid
+int redirect_check(char** cmd, int index);		// makes sure file paths are correct
+void execute_found_instruction(instruction* instr, int * inDirect, int * outDirect, int * pipe,
+	int* background, int* outIndex, int* inIndex, char** PWD);// decides what instruction to execute
 // Piping
 int piping(char** cmd, int index, int bg);
-int pipe_check(char** cmd, int index, int index2);
-int double_pipe(char** cmd, int index1, int index2, int bg);
+int pipe_check(char** cmd, int index, int index2);	// cheaks that pipe tokens and paths are valid
+int double_pipe(char** cmd, int index1, int index2, int bg);	// for two pipes, doesn't work
 // backgound processing
-void is_background(instruction* instr_ptr, char** backProc, pid_t** id, int size, int* current);//determine if background or foreground process
+void is_background(instruction* instr_ptr, char** backProc,
+    pid_t** id, int size, int* current);//determine if background or foreground process
 void addProcess(char** backProc, pid_t ** id, int size, int current);
 void deleteProcess(char** backProc, pid_t ** id, char* procToRem, int size, int* current);
 void processBegin(char** cmd,char** backProc, pid_t ** id, int size, int current);
@@ -62,7 +65,7 @@ int processEnd(char** backProc, pid_t ** id, int size, int* current);
 char* commandLine(instruction* instr_ptr);	//returns command line as one string
 char** makeCopy(instruction* instr_ptr);	//makes copy without the &
 pid_t** idArray(int size);	                //creates id array
-pid_t** resizeId(pid_t** array, int* sizeofarray); //returns an array with double the size as was previously passed, doubles passed int
+pid_t** resizeId(pid_t** array, int* sizeofarray);
 
 
 int main() {
@@ -84,7 +87,7 @@ int main() {
 	char* machine = getenv("MACHINE");
 	while (1) {
 		char * PWD = getenv("PWD");
-		// printf("Please enter an instruction: ");
+
 		if (processEnd(process, id, size, &current))
 			continue;
 		printf("%s%s%s%s%s%s", user, "@", machine, ":", PWD, "> ");
@@ -129,7 +132,7 @@ int main() {
 		} while ('\n' != getchar());    //until end of line is reached
 
 		if(instr.numTokens == 1 && strcmp(instr.tokens[0], "cd") == 0)
-			addToken(&instr, "~");
+			addToken(&instr, "~");	// just cd ass ~ to do the work for us
 
 		instrCount++;
 		addNull(&instr);
@@ -139,8 +142,6 @@ int main() {
 //		printTokens(&instr);
 		clearInstruction(&instr);
 
-//		if (processEnd(process, id, size, &current))
-  //                      continue;
 	}
 
 	return 0;
@@ -201,14 +202,16 @@ void clearInstruction(instruction* instr_ptr)
 void check_instruction_paths(instruction* instr, const char* PWD){
 	int i = 0;
 	for (i = 0; i < instr->numTokens; i++)
-	{
+	{	// i for counter, null for the end
 		if ((instr->tokens)[i] != NULL)
 		{
-			if (strstr(instr->tokens[i],"/") != NULL || strstr(instr->tokens[i],".") != NULL || strstr(instr->tokens[i],"~") != NULL)
+			if (strstr(instr->tokens[i],"/") != NULL || strstr(instr->tokens[i],".") != NULL || 
+			    strstr(instr->tokens[i],"~") != NULL)
 			{
 				char * temp = (char*)malloc(500 * sizeof(char));
-				temp = parse_path(instr->tokens[i], PWD);
+				temp = parse_path(instr->tokens[i], PWD);	// parse path on individual token
 
+				// resize if necessary
 				if (strlen(temp) > strlen(instr->tokens[i])){
 					instr->tokens[i] = resizeTeacher(instr->tokens[i], temp);
 					strcpy(instr->tokens[i], temp);
@@ -221,8 +224,9 @@ void check_instruction_paths(instruction* instr, const char* PWD){
 	}
 }
 
-// change the flags for each variable based on what commands are in instr, values chaged to 1 if instruction needs to be executed
-int check_instruction_type(instruction* instr, int * inDirect, int * outDirect, int * pipe, int * background, int * outIndex, int * inIndex){
+// return value of 1 for each instruction identified
+int check_instruction_type(instruction* instr, int * inDirect, 
+    int * outDirect, int * pipe, int * background, int * outIndex, int * inIndex){
 	int i = 0;
 	for (i = 0; i < instr->numTokens; i++)
 	{
@@ -241,7 +245,7 @@ int check_instruction_type(instruction* instr, int * inDirect, int * outDirect, 
 				*outIndex = i;
 			}
 			if (strcmp(instr->tokens[i], "|") == 0 ) {
-				if( *pipe == 1)	{
+				if( *pipe == 1)	{	// extra cheak for double pipe
 					*outIndex = i;
 					*pipe = *pipe + 1;
 				}
@@ -264,14 +268,15 @@ int check_instruction_type(instruction* instr, int * inDirect, int * outDirect, 
 
 
 // read through tokens
-void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, int size, int* current, int count) {
+void interpret(instruction* instr_ptr, char* PWD, char** backProc, 
+    pid_t** id, int size, int* current, int count) {
 	if(strcmp(instr_ptr->tokens[0], "echo") == 0) {		// get custom environment variabe string
 		printf("%s\n", echo(instr_ptr));
 		return;
 	}
 
 	check_instruction_paths(instr_ptr, PWD);
-	
+
 	int i = 0;
 	while(instr_ptr->tokens[i] != NULL ) {			// cheak any tokens are empty strings
 		if(strcmp(instr_ptr->tokens[i], "") == 0) {	// if so their was an invalid path
@@ -283,16 +288,18 @@ void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, i
 
 	int in_redirect = 0, out_redirect = 0, pipe = 0, background = 0, out_index = 0, in_index = 0;
 
-	if (check_instruction_type(instr_ptr, &in_redirect, &out_redirect, &pipe, &background, &out_index, &in_index) == 1){
-		printf("Unknown instruction type\n");
+	if (check_instruction_type(instr_ptr, &in_redirect, &out_redirect, 
+	    &pipe, &background, &out_index, &in_index) == 1){
+		printf("Unknown instruction type\n"); // if tokens not in a valid order
 		return;
 	}
-	
+
 	if (background == 1){              //there is an & somewhere in line
                 is_background(instr_ptr, backProc, id, size, current);
         }
 	else if (in_redirect == 1 && out_redirect == 1){
-		if( redirect_check(instr_ptr->tokens, in_index) == 1 && redirect_check(instr_ptr->tokens, out_index) == 1)
+		if( redirect_check(instr_ptr->tokens, in_index) == 1 && 
+		    redirect_check(instr_ptr->tokens, out_index) == 1)
 			in_out_redirect(instr_ptr->tokens, in_index, out_index, 0);
 		else
 			printf("Command not found\n");
@@ -324,7 +331,8 @@ void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, i
 	{
 		if (strcmp(instr_ptr->tokens[1],".") == 0)
 		{}
-		else if(strstr(instr_ptr->tokens[1],"/") == NULL && strstr(instr_ptr->tokens[1],"..") == NULL)
+		else if(strstr(instr_ptr->tokens[1],"/") == NULL && 
+		    strstr(instr_ptr->tokens[1],"..") == NULL)
 		{	//if there is not a / and not a ..
 			char * tempPWD = (char*)malloc(500 * sizeof(char));
 			strcpy(tempPWD,PWD);
@@ -396,8 +404,6 @@ char* parse_path(char* path, const char* PWD){
 		token = strtok(NULL, "/");
 	}
 
-//	array = make_tokens(&size, path);
-//	int j = size;
 	char* ret = (char*)malloc(500 * sizeof(char));		// ret will be the new absolute path
 
 	// Cheaking first element of path
@@ -420,7 +426,7 @@ char* parse_path(char* path, const char* PWD){
 		strcpy(ret, PWD); //getenv("PWD"));
 		strcat(ret, "/");		// add slash and path name
 	}
-	//int i = 0;
+
 	// for all token after the first
 	for ( j = 1; j < i; j++){
 		if(strcmp(array[j], ".") == 0)	{}		// '.' doesn't change directory
@@ -444,32 +450,6 @@ char* parse_path(char* path, const char* PWD){
 	return ret;
 }
 
-char** make_tokens(int* size, char* path){
-	char** array;	// 2D array
-//	int size = 5;	// initial size
-//	int absolute = 0;
-
-//	if(path[0] == '/')	// flag for absolute path
-//		absolute = 1;
-
-	array = createArray(*size);
-
-	char* token = strtok(path, "/");
-	int i = 1, j = 0;
-
-	while(token != NULL){			// will end with a list of all strings in path seperated by /
-		if(i == *size - 1){
-			array = resizeArray(array, size);	// cheak for resize
-		}
-
-		strcpy(array[i], token);
-		i++;
-		token = strtok(NULL, "/");
-	}
-
-	return array;
-
-}
 // return 1 if path name is valid 0 otherwise
 int path_check(const char* path){
  	struct stat buffer;
@@ -555,7 +535,7 @@ pid_t** idArray(int size)                      //creates id array
         return newarr;
 }
 
-pid_t** resizeId(pid_t** array, int* sizeofarray) //returns an array with double the size as was previously passed, doubles passed int
+pid_t** resizeId(pid_t** array, int* sizeofarray) 
 {
 	//keep origional size for dealocation, double it for new array
 	int oldsize = *sizeofarray;
@@ -788,7 +768,7 @@ int in_out_redirect(char** cmd, int in, int out, int bg){
 	{
 		waitpid(pid, &status, WNOHANG);
                 close(Input_fd);
-                close(Output_fd);			
+                close(Output_fd);
 	}
 	else {				// parent
 		waitpid(pid, &status, 0);
@@ -863,9 +843,8 @@ int piping(char** cmd, int index, int bg) {
 	int FDcmd1 = open(command1.tokens[0], O_RDONLY);
 
 	int FDcmd2 = open(command2.tokens[0], O_RDONLY);
-	
-	
-	
+
+
 	pid_t pid = fork();
 	int fd[2] = { FDcmd1, FDcmd2 };
 	if (pid == 0) {		// child
@@ -995,7 +974,6 @@ int double_pipe(char** cmd, int index1, int index2, int bg){
 			close(fd[2]);
 			char* path = commandPath(command2.tokens[0]);
 			execv(path, command2.tokens);
-
 		}
 	}
 	else if (bg == 1)
@@ -1009,50 +987,6 @@ int double_pipe(char** cmd, int index1, int index2, int bg){
 		printf("leaving\n");
 	}
 
-
-/*	if (pid == 0) {		// child
-		pipe(fd);
-
-		if(fork() == 0){	// grand child
-			close(1);
-			dup(fd[1]);
-			close(fd[0]);
-			close(fd[1]);
-			close(fd[2]);
-			char* path = commandPath(command0.tokens[0]);
-			execv(path, command0.tokens);
-
-		}
-		else {
-			if(fork() == 0){
-			close(0);
-			dup(fd[0]);
-			close(1);
-			dup(fd[2]);
-
-			close(fd[0]);
-			close(fd[1]);
-			close(fd[2]);
-			char* path = commandPath(command1.tokens[0]);
-			execv(path, command1.tokens);
-
-			}
-			else {
-				close(0);
-				dup(fd[1]);
-				close(fd[0]);
-				close(fd[1]);
-				close(fd[2]);
-				char* path = commandPath(command2.tokens[0]);
-				execv(path, command2.tokens);
-			}
-		}
-	}
-	else {
-		waitpid(pid, &status, 0);
-		waitpid(pid, &status, 0);
-	}
-*/
 	clearInstruction(&command0);
 	clearInstruction(&command1);
 	clearInstruction(&command2);
@@ -1062,7 +996,7 @@ int double_pipe(char** cmd, int index1, int index2, int bg){
 
 
 
-char* resizeTeacher(char* his, char* ours) // will resize the curent string in the instruction struct
+char* resizeTeacher(char* his, char* ours) // will resize the current in instruction struct
 {
 	free(his);
         his = (char*)malloc(strlen(ours) * sizeof(char));
@@ -1071,11 +1005,13 @@ char* resizeTeacher(char* his, char* ours) // will resize the curent string in t
 	return his;
 }
 
-void is_background(instruction* instr_ptr, char** backProc, pid_t** id, int size, int* current) //determine if background or foreground process
+void is_background(instruction* instr_ptr, char** backProc, pid_t** id, 
+    int size, int* current) //determine if background or foreground process
 {
 	if (strcmp(instr_ptr->tokens[0],"&") == 0)					//if & CMD
 	{
-		if (strcmp(instr_ptr->tokens[instr_ptr->numTokens - 2],"&") == 0)	//& CMD &, behave same as CMD &
+	    //& CMD &, behave same as CMD &
+		if (strcmp(instr_ptr->tokens[instr_ptr->numTokens - 2],"&") == 0)
 		{
 			char * line = commandLine(instr_ptr);
                         if(*current == size - 1)                //make more space if no more room
@@ -1150,11 +1086,12 @@ void is_background(instruction* instr_ptr, char** backProc, pid_t** id, int size
                                         *current = *current + 1;
 				}
 				else
-                        		printf("Command not found\n");				
+                        		printf("Command not found\n");
 			}
 			else if (in_redirect == 1 && out_redirect == 1)
 			{
-                		if( redirect_check(instr_ptr->tokens, in_index) == 1 && redirect_check(instr_ptr->tokens, out_index) == 1)
+                		if( redirect_check(instr_ptr->tokens, in_index) == 1 && 
+                		    redirect_check(instr_ptr->tokens, out_index) == 1)
                         	{
 					*id[*current] = in_out_redirect(instr_ptr->tokens, in_index, out_index,1);
                 			printf("[%d] [%d]\n",*current+1, *id[*current]);    //prints message
@@ -1179,7 +1116,7 @@ void is_background(instruction* instr_ptr, char** backProc, pid_t** id, int size
 				if( redirect_check(command, out_index) == 1)
                                 {
                                         *id[*current] = output_redirect(command, out_index, 1);
-                                 	printf("[%d] [%d]\n",*current+1, *id[*current]);    //prints message
+                                 	printf("[%d] [%d]\n",*current+1, *id[*current]);//prints message
 					*current = *current + 1;
                                 }
                                 else
@@ -1196,7 +1133,7 @@ void is_background(instruction* instr_ptr, char** backProc, pid_t** id, int size
 		printf("Error: Invalid Syntax\n");
 }
 
-char* commandLine(instruction* instr_ptr)		//returns all the tokens for that lines as one string
+char* commandLine(instruction* instr_ptr)	// returns all the tokens for that lines as one string
 {
 	char * line = (char*)malloc(500 * sizeof(char));
  	int i;
@@ -1238,7 +1175,7 @@ void processBegin(char** cmd, char** backProc, pid_t** id, int size, int current
 	}
 }
 
-char** makeCopy(instruction* instr_ptr)        //makes copy of instr_ptr without the & and adds null
+char** makeCopy(instruction* instr_ptr)     // makes copy of instr_ptr without the & and adds null
 {
 	int size = instr_ptr->numTokens - 1;
 	instruction instr;
@@ -1261,7 +1198,8 @@ void deleteProcess(char** backProc, pid_t ** id, char* procToRem, int size, int*
 	int i;
 	for (i = 0; i < *current; i++)
 	{
-		if (strcmp(backProc[i],procToRem) == 0 && strcmp(backProc[i],"NULL") != 0)//found the process to remove
+		if (strcmp(backProc[i],procToRem) == 0 && 
+		    strcmp(backProc[i],"NULL") != 0)//found the process to remove
 		{
 			backProc[i] = backProc[i+1];	//remove command and id from both arrays by shifting
 			id[i] = id[i+1];
@@ -1271,7 +1209,8 @@ void deleteProcess(char** backProc, pid_t ** id, char* procToRem, int size, int*
 	}
 }
 
-int processEnd(char** backProc, pid_t** id, int size, int* current)		//determine if process done, then will remove
+// determine if process done, then will remove
+int processEnd(char** backProc, pid_t** id, int size, int* current)		
 {
 	int status;
 	int i;

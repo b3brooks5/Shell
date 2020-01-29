@@ -136,7 +136,7 @@ int main() {
 		interpret(&instr, PWD, process, id, size, &current,instrCount);
 
 //		processEnd(process, id, size, current);
-		printTokens(&instr);
+//		printTokens(&instr);
 		clearInstruction(&instr);
 
 //		if (processEnd(process, id, size, &current))
@@ -246,7 +246,7 @@ int check_instruction_type(instruction* instr, int * inDirect, int * outDirect, 
 					*pipe = *pipe + 1;
 				}
 				else {
-					*pipe = *pipe + 1;
+					*pipe = 1;
 					*inIndex = i;
 				}
 			}
@@ -265,14 +265,13 @@ int check_instruction_type(instruction* instr, int * inDirect, int * outDirect, 
 
 // read through tokens
 void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, int size, int* current, int count) {
-	printTokens(instr_ptr);
 	if(strcmp(instr_ptr->tokens[0], "echo") == 0) {		// get custom environment variabe string
 		printf("%s\n", echo(instr_ptr));
 		return;
 	}
 
 	check_instruction_paths(instr_ptr, PWD);
-	printf("Paths cheacked\n");
+	
 	int i = 0;
 	while(instr_ptr->tokens[i] != NULL ) {			// cheak any tokens are empty strings
 		if(strcmp(instr_ptr->tokens[i], "") == 0) {	// if so their was an invalid path
@@ -288,7 +287,7 @@ void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, i
 		printf("Unknown instruction type\n");
 		return;
 	}
-
+	
 	if (background == 1){              //there is an & somewhere in line
                 is_background(instr_ptr, backProc, id, size, current);
         }
@@ -312,7 +311,7 @@ void interpret(instruction* instr_ptr, char* PWD, char** backProc, pid_t** id, i
 		else
 			printf("Command not found\n");
 	}
-	else if (pipe > 1){
+	else if (pipe >= 1){
 		if(pipe_check(instr_ptr->tokens, in_index, out_index) == 1)
 			piping(instr_ptr->tokens, in_index, 0);
 		else if (pipe_check(instr_ptr->tokens, in_index, out_index) == 2)
@@ -633,8 +632,7 @@ char* commandPath(char* cmd)
 }
 
 void my_execute(char** cmd)
-{
-	char* path = (char*)malloc(500 * sizeof(char));
+{	char* path = (char*)malloc(500 * sizeof(char));
 	strcpy(path, commandPath(cmd[0]));
 	int status;
 	pid_t pid = fork();
@@ -827,9 +825,7 @@ int pipe_check(char** cmd, int index, int index2){
 				return 2;	// valid call for two pipes
 		}
 		else {
-			printf("cmd[0] = %s\n", cmd[0]);
 			if(path_check(cmd[index +1]) == 1){
-				printf("cmd[index + 1] = %s\n", cmd[index+ 1]);
 				return 1;
 			}
 		}
@@ -867,7 +863,9 @@ int piping(char** cmd, int index, int bg) {
 	int FDcmd1 = open(command1.tokens[0], O_RDONLY);
 
 	int FDcmd2 = open(command2.tokens[0], O_RDONLY);
-
+	
+	
+	
 	pid_t pid = fork();
 	int fd[2] = { FDcmd1, FDcmd2 };
 	if (pid == 0) {		// child
@@ -1137,17 +1135,17 @@ void is_background(instruction* instr_ptr, char** backProc, pid_t** id, int size
                         }
                         backProc[*current] = line; 		//stores the command line
                         char ** command = makeCopy(instr_ptr);
-			if (pipe > 1)
+			if (pipe >= 1)
 			{
-		                if(pipe_check(instr_ptr->tokens, in_index, out_index) == 1)
+				if(pipe_check(instr_ptr->tokens, p_index, out_index) == 1)
                         	{
-					*id[*current] = piping(instr_ptr->tokens, in_index, 1);
+					*id[*current] = piping(instr_ptr->tokens, p_index, 1);
                 			printf("[%d] [%d]\n",*current+1, *id[*current]);    //prints message
                                         *current = *current + 1;
 				}
-				else if (pipe_check(instr_ptr->tokens, in_index, out_index) == 2)
+				else if (pipe_check(instr_ptr->tokens, p_index, out_index) == 2)
                         	{
-					*id[*current] = double_pipe(instr_ptr->tokens, in_index, out_index, 1);
+					*id[*current] = double_pipe(instr_ptr->tokens, p_index, out_index, 1);
                 			printf("[%d] [%d]\n",*current+1, *id[*current]);    //prints message
                                         *current = *current + 1;
 				}
@@ -1180,7 +1178,7 @@ void is_background(instruction* instr_ptr, char** backProc, pid_t** id, int size
 			{
 				if( redirect_check(command, out_index) == 1)
                                 {
-                                        *id[*current] = output_redirect(command, in_index, 1);
+                                        *id[*current] = output_redirect(command, out_index, 1);
                                  	printf("[%d] [%d]\n",*current+1, *id[*current]);    //prints message
 					*current = *current + 1;
                                 }

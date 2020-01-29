@@ -319,6 +319,7 @@ void interpret(instruction* instr_ptr, char* PWD, char** backProc,
 			printf("Command not found\n");
 	}
 	else if (pipe >= 1){
+		printf("%d\n", pipe_check(instr_ptr->tokens, in_index, out_index));
 		if(pipe_check(instr_ptr->tokens, in_index, out_index) == 1)
 			piping(instr_ptr->tokens, in_index, 0);
 		else if (pipe_check(instr_ptr->tokens, in_index, out_index) == 2)
@@ -898,7 +899,7 @@ int double_pipe(char** cmd, int index1, int index2, int bg){
 }
 
 int pipe_check(char** cmd, int index, int index2){
-	if(path_check(cmd[0]) == 1){
+//	if(path_check(cmd[0]) == 1){
 		if(index2 != 0){	// more then one pipe
 			if(path_check(cmd[index + 1]) == 1 && path_check(cmd[index2 +1]) == 1)
 				return 2;	// valid call for two pipes
@@ -908,7 +909,7 @@ int pipe_check(char** cmd, int index, int index2){
 				return 1;
 			}
 		}
-	}
+//	}
 	return 0;
 }
 

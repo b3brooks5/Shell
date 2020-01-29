@@ -566,15 +566,17 @@ char* echo(instruction* cmd){
 	char* ret = (char*)malloc(500 * sizeof(char));
 	if(strcmp(cmd->tokens[0], "echo") == 0){
 		while(cmd->tokens[i] != NULL){
-			if(cmd->tokens[i][0] == '$'){	// if var is environment
+			if(cmd->tokens[i][0] == '$' && isalpha(cmd->tokens[i][1]) != 0 ){
+				// see if it is an environment variable
 				char* env = getenv(&(cmd->tokens[i][1]));
 				if(env != NULL){	// if env var found
 					strcat(ret, env);
 					strcat(ret, " ");
 				}
 				else {			// else add string
-					strcat(ret, cmd->tokens[i]);
-					strcat(ret, " ");
+					strcpy(ret, cmd->tokens[i]);
+					strcat(ret, ": Undefined variable"); 
+					break;
 				}
 			}
 			else {				// if noe env just add is

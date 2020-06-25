@@ -140,7 +140,7 @@ int main() {
 		instrCount++;
 		addNull(&instr);
 		interpret(&instr, PWD, process, id, size, &current,instrCount);
-//		printTokens(&instr);
+
 		clearInstruction(&instr);
 	}
 
